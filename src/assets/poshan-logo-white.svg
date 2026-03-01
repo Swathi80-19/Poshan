@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <!-- Bowl Fill -->
+  <path d="M16 52 Q16 68 40 68 Q64 68 64 52 Z" fill="rgba(255,255,255,0.15)"/>
+  
+  <!-- Bowl Outline -->
+  <path d="M16 52 Q16 68 40 68 Q64 68 64 52 Z" stroke="white" stroke-width="2.5"/>
+  
+  <!-- Bowl Top Rim -->
+  <ellipse cx="40" cy="52" rx="24" ry="5" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="2.5"/>
+
+  <!-- Little details on bowl -->
+  <path d="M34 62 A 2 2 0 0 0 37 62" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <path d="M43 62 A 2 2 0 0 0 46 62" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  <circle cx="40" cy="64" r="1.5" fill="white"/>
+
+  <!-- Center stem -->
+  <path d="M40 50 L40 22" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Center circle -->
+  <circle cx="40" cy="18" r="5" fill="white"/>
+
+  <!-- Left branch -->
+  <path d="M40 40 L28 24" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Left circle -->
+  <circle cx="26" cy="21" r="5" fill="white"/>
+
+  <!-- Right branch -->
+  <path d="M40 36 L52 20" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  
+  <!-- Right circle -->
+  <circle cx="55" cy="17" r="5" fill="white"/>
+</svg>
