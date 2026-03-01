@@ -56,7 +56,7 @@ export default function RegisterPage() {
 
                 {/* Right panel - form */}
                 <div style={{
-                    width: 480,
+                    width: '100%', maxWidth: 480,
                     padding: 64,
                     display: 'flex',
                     flexDirection: 'column',

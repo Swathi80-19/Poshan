@@ -41,7 +41,7 @@ export default function AppLayout() {
                             <div className="sidebar-nav-icon">
                                 <Icon size={17} />
                             </div>
-                            <span style={{ flex: 1 }}>{label}</span>
+                            <span className="nav-label">{label}</span>
                             {badge && <span className="nav-badge">{badge}</span>}
                         </NavLink>
                     ))}

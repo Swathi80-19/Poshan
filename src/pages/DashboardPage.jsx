@@ -495,7 +495,7 @@ export default function DashboardPage() {
 
             <div className="page-body">
                 {/* ── ROW 0: Quick stat pills ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 22 }}>
+                <div className="g-4">
                     <StatPill icon="🔥" label="Calories Today" val="1,239 kcal" color="#F97316" trend="+8% vs avg" trendDir="up" />
                     <StatPill icon="💧" label="Water Intake" val="1,000 ml" color="#3B82F6" trend="50% of 2L" trendDir="up" />
                     <StatPill icon="💪" label="Protein Today" val="74g / 120g" color="#8BAF7C" trend="62% of goal" trendDir="up" />
@@ -503,7 +503,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* ── ROW 1: Progress banner + Calorie Summary ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 22, marginBottom: 22 }}>
+                <div className="g-2-auto">
                     <div style={{ background: 'linear-gradient(145deg, #4D7A3E 0%, #8BAF7C 100%)', borderRadius: 24, padding: '24px 28px', position: 'relative', overflow: 'hidden', color: 'white' }}>
                         <div style={{ position: 'absolute', right: -30, top: -30, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
                         <div style={{ position: 'absolute', right: 40, bottom: -40, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
@@ -597,7 +597,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* ── ROW 3: AI Tip + Mood ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 22, marginBottom: 22 }}>
+                <div className="g-2">
                     <div style={{ background: 'linear-gradient(135deg, #F5F3FF, #EDE9FE)', border: '1px solid #DDD6FE', borderRadius: 20, padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 14 }}>
                         <div style={{ width: 44, height: 44, borderRadius: 14, background: '#8B5CF6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>🤖</div>
                         <div style={{ flex: 1 }}>
@@ -613,7 +613,7 @@ export default function DashboardPage() {
 
                 {/* ── ROW 4: Timers Grid ── */}
                 <div style={{ fontSize: 17, fontWeight: 700, color: '#111827', marginBottom: 14 }}>🏃 Activity Timers</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18, marginBottom: 22 }}>
+                <div className="g-3">
                     <TimerWidget title="Exercise Timer" emoji="💪" color="#F97316"
                         presets={[{ label: '15 min', secs: 900 }, { label: '30 min', secs: 1800 }, { label: '45 min', secs: 2700 }, { label: '60 min', secs: 3600 }]}
                         defaultSecs={1800} />
@@ -628,7 +628,7 @@ export default function DashboardPage() {
                     <span style={{ fontSize: 17, fontWeight: 700, color: '#111827' }}>🍽️ Today's Meals</span>
                     <span style={{ fontSize: 12, color: '#6B7280' }}>Tap meal to add food • auto-calculates nutrients</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 22 }}>
+                <div className="g-2">
                     <MealLogger mealType="breakfast" emoji="🥣" color="#F97316" bgColor="#FFF7ED" time="08:30" />
                     <MealLogger mealType="lunch" emoji="🍱" color="#3B82F6" bgColor="#EFF6FF" time="13:00" />
                     <MealLogger mealType="dinner" emoji="🍛" color="#8BAF7C" bgColor="#F0FDF4" time="19:30" />
@@ -636,13 +636,13 @@ export default function DashboardPage() {
                 </div>
 
                 {/* ── ROW 6: Steps + Hydration ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22, marginBottom: 22 }}>
+                <div className="g-2">
                     <StepsTracker />
                     <HydrationTracker />
                 </div>
 
                 {/* ── ROW 7: BMI + Upcoming Appointment ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 22 }}>
+                <div className="g-2">
                     {/* BMI */}
                     <div className="card" style={{ padding: 22 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>

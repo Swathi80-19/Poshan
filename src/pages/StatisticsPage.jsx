@@ -130,7 +130,7 @@ export default function StatisticsPage() {
 
             <div className="page-body">
                 {/* KPI Strip */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+                <div className="g-4">
                     {[
                         { icon: '🔥', label: 'Avg Calories', val: <Highlight color="#F97316">1,239</Highlight>, sub: 'kcal/day', color: '#FFF0E6' },
                         { icon: '⚖️', label: 'Current Weight', val: <Highlight color="#8BAF7C">53 kg</Highlight>, sub: '-2kg this month', color: '#E8F1E4' },
@@ -147,7 +147,7 @@ export default function StatisticsPage() {
                 </div>
 
                 {/* ── Row 1: Calorie Cut Chart (NEW) + Weight Trend ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+                <div className="g-2">
 
                     {/* Calorie Cut / Deficit Chart */}
                     <div className="card" style={{ padding: 24 }}>
@@ -222,7 +222,7 @@ export default function StatisticsPage() {
                 </div>
 
                 {/* ── Row 2: Macro Pie + Nutrient Radial ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+                <div className="g-2">
 
                     {/* Macros Pie Chart */}
                     <div className="card" style={{ padding: 24 }}>
@@ -271,7 +271,7 @@ export default function StatisticsPage() {
                 </div>
 
                 {/* ── Row 3: Exercise Horizontal Bar + Sleep Stacked ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+                <div className="g-2">
 
                     {/* Exercise — Horizontal Bar Chart */}
                     <div className="card" style={{ padding: 24 }}>
@@ -327,7 +327,7 @@ export default function StatisticsPage() {
                 </div>
 
                 {/* ── Row 4: Water Intake (Stacked) + Health Metrics ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+                <div className="g-2">
 
                     {/* Water Stacked Bar */}
                     <div className="card" style={{ padding: 24 }}>
@@ -373,7 +373,7 @@ export default function StatisticsPage() {
                         <Award size={16} color="#F59E0B" />
                         <span style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Achievements</span>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                    <div className="g-4">
                         {achievements.map(({ icon, label, sub, color }) => (
                             <div key={label} style={{ background: color, borderRadius: 16, padding: '16px', textAlign: 'center' }}>
                                 <div style={{ fontSize: 32, marginBottom: 8 }}>{icon}</div>

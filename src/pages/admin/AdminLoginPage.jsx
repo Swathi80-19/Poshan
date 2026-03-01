@@ -34,7 +34,7 @@ export default function AdminLoginPage() {
                 backgroundSize: '40px 40px', pointerEvents: 'none'
             }} />
 
-            <div className="anim-scale" style={{ width: 440, position: 'relative', zIndex: 2 }}>
+            <div className="anim-scale" style={{ width: '100%', maxWidth: 440, position: 'relative', zIndex: 2 }}>
                 {/* Card */}
                 <div style={{
                     background: 'rgba(255,255,255,0.04)',
