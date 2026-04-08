@@ -1,31 +1,40 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import poshanLogoWhite from '../assets/poshan-logo-white.svg'
-import { saveMemberSession } from '../lib/session'
+import { clearMemberSession, saveMemberSession } from '../lib/session'
+import { loginMember } from '../lib/memberApi'
 
 export default function UserLoginPage() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({ identifier: '', password: '' })
 
-  const enterWorkspace = () => {
-    const fallbackName = form.email?.split('@')[0] || 'member'
+  useEffect(() => {
+    clearMemberSession()
+  }, [])
 
-    saveMemberSession({
-      name: fallbackName,
-      username: fallbackName,
-      email: form.email,
-    })
-
-    navigate('/app/dashboard')
-  }
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     setLoading(true)
-    window.setTimeout(enterWorkspace, 700)
+    setError('')
+
+    try {
+      const session = await loginMember({
+        email: form.identifier.trim(),
+        password: form.password,
+      })
+
+      saveMemberSession(session)
+      navigate('/app/dashboard')
+    } catch (requestError) {
+      clearMemberSession()
+      setError(requestError.message || 'Unable to sign in right now.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -52,9 +61,9 @@ export default function UserLoginPage() {
           </p>
 
           <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
-            <li><span className="feature-dot">•</span><span>Daily command center updates from your own saved account.</span></li>
-            <li><span className="feature-dot">•</span><span>Meals, activity, and recovery stay tied to your login.</span></li>
-            <li><span className="feature-dot">•</span><span>New accounts complete a body profile intake before the dashboard opens.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Daily command center updates from your own saved account.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Meals, activity, and recovery stay tied to your login.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>New accounts complete a body profile intake before the dashboard opens.</span></li>
           </ul>
         </div>
       </section>
@@ -78,21 +87,26 @@ export default function UserLoginPage() {
           <p className="auth-copy">Access your meal rhythm, care notes, and consultation history.</p>
 
           <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
-            <span className="feature-dot">•</span>
+            <span className="feature-dot">&bull;</span>
             <span>Your member workspace opens from your own login session without demo shortcuts.</span>
           </div>
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">Email address</label>
+              <label className="form-label">Email or dashboard name</label>
               <div className="form-input-icon-wrap">
                 <Mail size={18} className="form-input-icon" />
                 <input
                   className="form-input"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={form.email}
-                  onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+                  placeholder="you@example.com or krishna_fit"
+                  value={form.identifier}
+                  onChange={(event) => {
+                    if (error) {
+                      setError('')
+                    }
+
+                    setForm((current) => ({ ...current, identifier: event.target.value }))
+                  }}
                   required
                 />
               </div>
@@ -110,7 +124,13 @@ export default function UserLoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
                   value={form.password}
-                  onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                  onChange={(event) => {
+                    if (error) {
+                      setError('')
+                    }
+
+                    setForm((current) => ({ ...current, password: event.target.value }))
+                  }}
                   style={{ paddingRight: '3rem' }}
                   required
                 />
@@ -123,6 +143,13 @@ export default function UserLoginPage() {
                 </button>
               </div>
             </div>
+
+            {error ? (
+              <div className="auth-note" style={{ marginBottom: '1.2rem', color: '#bf5f47' }}>
+                <span className="feature-dot">&bull;</span>
+                <span>{error}</span>
+              </div>
+            ) : null}
 
             <div className="auth-actions" style={{ marginTop: 0 }}>
               <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ flex: 1 }}>

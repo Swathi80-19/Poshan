@@ -25,6 +25,7 @@ import {
   YAxis,
 } from 'recharts'
 import { useTracking } from '../context/TrackingContext'
+import { getMemberDisplayName } from '../lib/session'
 import {
   getMacroTotals,
   getWeightTrend,
@@ -96,7 +97,7 @@ function scoreFromRatio(value, goal) {
 
 export default function StatisticsPage() {
   const [period, setPeriod] = useState('7 days')
-  const username = localStorage.getItem('poshan_username') || localStorage.getItem('poshan_name') || 'Krishna'
+  const username = getMemberDisplayName()
   const initial = username.charAt(0).toUpperCase()
   const { profile, dailyData, foodEntries, summary, latestDay } = useTracking()
 

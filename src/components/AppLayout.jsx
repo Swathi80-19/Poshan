@@ -1,4 +1,5 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Outlet, NavLink } from 'react-router-dom'
 import {
   LayoutDashboard,
   BarChart2,
@@ -6,9 +7,9 @@ import {
   Calendar,
   MessageSquare,
   Settings,
-  LogOut,
 } from 'lucide-react'
 import poshanLogo from '../assets/poshan-logo.svg'
+import { getMemberSession, MEMBER_SESSION_EVENT } from '../lib/session'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/app/dashboard' },
@@ -19,9 +20,19 @@ const navItems = [
 ]
 
 export default function AppLayout() {
-  const navigate = useNavigate()
-  const username = localStorage.getItem('poshan_username') || localStorage.getItem('poshan_name') || 'Krishna'
+  const [session, setSession] = useState(() => getMemberSession())
+  const username = session.username || session.name || 'Member'
   const initial = username.charAt(0).toUpperCase()
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined
+    }
+
+    const syncSession = () => setSession(getMemberSession())
+    window.addEventListener(MEMBER_SESSION_EVENT, syncSession)
+    return () => window.removeEventListener(MEMBER_SESSION_EVENT, syncSession)
+  }, [])
 
   return (
     <div className="app-layout">
@@ -53,24 +64,15 @@ export default function AppLayout() {
           <div className="divider" style={{ margin: '0.55rem 0' }} />
           <div className="sidebar-section-title">Account</div>
 
-          <button type="button" className="sidebar-nav-item">
+          <NavLink
+            to="/app/settings"
+            className={({ isActive }) => `sidebar-nav-item ${isActive ? 'active' : ''}`}
+          >
             <div className="sidebar-nav-icon">
               <Settings size={17} />
             </div>
             <span className="nav-label">Settings</span>
-          </button>
-
-          <button
-            type="button"
-            className="sidebar-nav-item"
-            style={{ color: '#bf5f47' }}
-            onClick={() => navigate('/choice')}
-          >
-            <div className="sidebar-nav-icon">
-              <LogOut size={17} />
-            </div>
-            <span className="nav-label">Logout</span>
-          </button>
+          </NavLink>
         </nav>
 
         <div className="sidebar-bottom">

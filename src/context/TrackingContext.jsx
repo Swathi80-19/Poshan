@@ -1,5 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import {
+  addActivityLog as addActivityLogRequest,
+  addFoodLog as addFoodLogRequest,
+  getActivityLogs,
+  getFoodLogs,
+  getMemberProfile,
+  updateMemberProfile as updateMemberProfileRequest,
+} from '../lib/memberApi'
+import {
   buildDailyData,
   createDefaultTrackingState,
   createId,
@@ -10,7 +18,11 @@ import {
   toNumber,
 } from '../lib/tracking'
 import { applyEstimatedNutrition } from '../lib/nutrition'
-import { getMemberTrackingStorageKey, MEMBER_SESSION_EVENT } from '../lib/session'
+import {
+  getMemberSession,
+  getMemberTrackingStorageKey,
+  MEMBER_SESSION_EVENT,
+} from '../lib/session'
 
 const TrackingContext = createContext(null)
 
@@ -38,6 +50,100 @@ function loadInitialState(storageKey) {
   }
 }
 
+function toProfileState(profile = {}) {
+  return {
+    ...defaultProfile,
+    age: profile.age ?? defaultProfile.age,
+    gender: profile.gender ?? defaultProfile.gender,
+    heightCm: profile.heightCm ?? defaultProfile.heightCm,
+    currentWeightKg: profile.currentWeightKg ?? defaultProfile.currentWeightKg,
+    targetWeightKg: profile.targetWeightKg ?? defaultProfile.targetWeightKg,
+    activityLevel: profile.activityLevel ?? defaultProfile.activityLevel,
+    goalFocus: profile.goalFocus ?? defaultProfile.goalFocus,
+    calorieGoal: profile.calorieGoal ?? defaultProfile.calorieGoal,
+    proteinGoal: profile.proteinGoal ?? defaultProfile.proteinGoal,
+    carbsGoal: profile.carbsGoal ?? defaultProfile.carbsGoal,
+    fatsGoal: profile.fatsGoal ?? defaultProfile.fatsGoal,
+    fiberGoal: profile.fiberGoal ?? defaultProfile.fiberGoal,
+    waterGoal: profile.waterGoal ?? defaultProfile.waterGoal,
+    stepGoal: profile.stepGoal ?? defaultProfile.stepGoal,
+    activeMinutesGoal: profile.activeMinutesGoal ?? defaultProfile.activeMinutesGoal,
+    sleepGoal: profile.sleepGoal ?? defaultProfile.sleepGoal,
+  }
+}
+
+function hasMeaningfulProfile(profile) {
+  return Object.entries(defaultProfile).some(([key, defaultValue]) => profile[key] !== defaultValue)
+}
+
+function hasMeaningfulTrackingState(state) {
+  return hasMeaningfulProfile(state.profile) || state.foodEntries.length > 0 || state.activityEntries.length > 0
+}
+
+function mapProfileResponse(profile) {
+  return toProfileState(profile)
+}
+
+function mapFoodEntry(entry) {
+  return {
+    id: entry.id ? `food-${entry.id}` : createId('food'),
+    day: entry.dayLabel,
+    mealType: entry.mealType,
+    foodName: entry.foodName,
+    calories: toNumber(entry.calories),
+    protein: toNumber(entry.protein),
+    carbs: toNumber(entry.carbs),
+    fats: toNumber(entry.fats),
+    fiber: toNumber(entry.fiber),
+    loggedAt: entry.loggedAt || new Date().toISOString(),
+  }
+}
+
+function mapActivityEntry(entry) {
+  return {
+    id: entry.id ? `activity-${entry.id}` : createId('activity'),
+    day: entry.dayLabel,
+    steps: toNumber(entry.steps),
+    activeMinutes: toNumber(entry.activeMinutes),
+    water: toNumber(entry.water),
+    sleepHours: toNumber(entry.sleepHours),
+    sleepQuality: toNumber(entry.sleepQuality),
+    weight: toNumber(entry.weight),
+    mood: entry.mood || '',
+    notes: entry.notes || '',
+    loggedAt: entry.loggedAt || new Date().toISOString(),
+  }
+}
+
+function toRemoteState(profile, foodEntries, activityEntries) {
+  return {
+    profile: mapProfileResponse(profile),
+    foodEntries: Array.isArray(foodEntries) ? foodEntries.map(mapFoodEntry) : [],
+    activityEntries: Array.isArray(activityEntries) ? activityEntries.map(mapActivityEntry) : [],
+  }
+}
+
+function toProfilePayload(profile) {
+  return {
+    age: toNumber(profile.age),
+    gender: profile.gender,
+    heightCm: toNumber(profile.heightCm),
+    currentWeightKg: toNumber(profile.currentWeightKg),
+    targetWeightKg: toNumber(profile.targetWeightKg),
+    activityLevel: profile.activityLevel,
+    goalFocus: profile.goalFocus,
+    calorieGoal: toNumber(profile.calorieGoal),
+    proteinGoal: toNumber(profile.proteinGoal),
+    carbsGoal: toNumber(profile.carbsGoal),
+    fatsGoal: toNumber(profile.fatsGoal),
+    fiberGoal: toNumber(profile.fiberGoal),
+    waterGoal: toNumber(profile.waterGoal),
+    stepGoal: toNumber(profile.stepGoal),
+    activeMinutesGoal: toNumber(profile.activeMinutesGoal),
+    sleepGoal: toNumber(profile.sleepGoal),
+  }
+}
+
 export function TrackingProvider({ children }) {
   const [storageKey, setStorageKey] = useState(() => getMemberTrackingStorageKey())
   const [trackingState, setTrackingState] = useState(() => loadInitialState(getMemberTrackingStorageKey()))
@@ -56,7 +162,42 @@ export function TrackingProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    setTrackingState(loadInitialState(storageKey))
+    const localState = loadInitialState(storageKey)
+    const session = getMemberSession()
+    let cancelled = false
+
+    setTrackingState(localState)
+
+    if (!session.accessToken) {
+      return () => {
+        cancelled = true
+      }
+    }
+
+    ;(async () => {
+      try {
+        const [profile, foodEntries, activityEntries] = await Promise.all([
+          getMemberProfile(session.accessToken),
+          getFoodLogs(session.accessToken),
+          getActivityLogs(session.accessToken),
+        ])
+
+        const remoteState = toRemoteState(profile, foodEntries, activityEntries)
+        const shouldUseRemote = hasMeaningfulTrackingState(remoteState) || !hasMeaningfulTrackingState(localState)
+
+        if (!cancelled && shouldUseRemote) {
+          setTrackingState(remoteState)
+        }
+      } catch {
+        if (!cancelled) {
+          setTrackingState(localState)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
   }, [storageKey])
 
   useEffect(() => {
@@ -64,9 +205,10 @@ export function TrackingProvider({ children }) {
   }, [storageKey, trackingState])
 
   const updateProfile = (updates) => {
-    setTrackingState((currentState) => ({
-      ...currentState,
-      profile: {
+    const session = getMemberSession()
+
+    setTrackingState((currentState) => {
+      const nextProfile = {
         ...currentState.profile,
         ...Object.fromEntries(
           Object.entries(updates).map(([key, value]) => [
@@ -74,53 +216,121 @@ export function TrackingProvider({ children }) {
             PROFILE_NUMERIC_FIELDS.has(key) ? toNumber(value) : value,
           ]),
         ),
-      },
-    }))
+      }
+
+      if (session.accessToken) {
+        void updateMemberProfileRequest(session.accessToken, toProfilePayload(nextProfile))
+          .then((response) => {
+            setTrackingState((latestState) => ({
+              ...latestState,
+              profile: mapProfileResponse(response),
+            }))
+          })
+          .catch(() => {})
+      }
+
+      return {
+        ...currentState,
+        profile: nextProfile,
+      }
+    })
   }
 
   const addFoodEntry = (entry) => {
     const normalizedEntry = applyEstimatedNutrition(entry)
+    const session = getMemberSession()
 
-    setTrackingState((currentState) => ({
-      ...currentState,
-      foodEntries: [
-        {
-          id: createId('food'),
-          day: normalizedEntry.day,
-          mealType: normalizedEntry.mealType,
-          foodName: normalizedEntry.foodName.trim(),
-          calories: toNumber(normalizedEntry.calories),
-          protein: toNumber(normalizedEntry.protein),
-          carbs: toNumber(normalizedEntry.carbs),
-          fats: toNumber(normalizedEntry.fats),
-          fiber: toNumber(normalizedEntry.fiber),
-          loggedAt: new Date().toISOString(),
-        },
-        ...currentState.foodEntries,
-      ],
-    }))
+    setTrackingState((currentState) => {
+      const nextEntry = {
+        id: createId('food'),
+        day: normalizedEntry.day,
+        mealType: normalizedEntry.mealType,
+        foodName: normalizedEntry.foodName.trim(),
+        calories: toNumber(normalizedEntry.calories),
+        protein: toNumber(normalizedEntry.protein),
+        carbs: toNumber(normalizedEntry.carbs),
+        fats: toNumber(normalizedEntry.fats),
+        fiber: toNumber(normalizedEntry.fiber),
+        loggedAt: new Date().toISOString(),
+      }
+
+      if (session.accessToken) {
+        void addFoodLogRequest(session.accessToken, {
+          dayLabel: nextEntry.day,
+          mealType: nextEntry.mealType,
+          foodName: nextEntry.foodName,
+          calories: nextEntry.calories,
+          protein: nextEntry.protein,
+          carbs: nextEntry.carbs,
+          fats: nextEntry.fats,
+          fiber: nextEntry.fiber,
+          loggedAt: nextEntry.loggedAt,
+        })
+          .then((response) => {
+            setTrackingState((latestState) => ({
+              ...latestState,
+              foodEntries: latestState.foodEntries.map((item) => (
+                item.id === nextEntry.id ? mapFoodEntry(response) : item
+              )),
+            }))
+          })
+          .catch(() => {})
+      }
+
+      return {
+        ...currentState,
+        foodEntries: [nextEntry, ...currentState.foodEntries],
+      }
+    })
   }
 
   const addActivityEntry = (entry) => {
-    setTrackingState((currentState) => ({
-      ...currentState,
-      activityEntries: [
-        {
-          id: createId('activity'),
-          day: entry.day,
-          steps: toNumber(entry.steps),
-          activeMinutes: toNumber(entry.activeMinutes),
-          water: toNumber(entry.water),
-          sleepHours: toNumber(entry.sleepHours),
-          sleepQuality: toNumber(entry.sleepQuality),
-          weight: toNumber(entry.weight),
-          mood: entry.mood.trim(),
-          notes: entry.notes.trim(),
-          loggedAt: new Date().toISOString(),
-        },
-        ...currentState.activityEntries,
-      ],
-    }))
+    const session = getMemberSession()
+
+    setTrackingState((currentState) => {
+      const nextEntry = {
+        id: createId('activity'),
+        day: entry.day,
+        steps: toNumber(entry.steps),
+        activeMinutes: toNumber(entry.activeMinutes),
+        water: toNumber(entry.water),
+        sleepHours: toNumber(entry.sleepHours),
+        sleepQuality: toNumber(entry.sleepQuality),
+        weight: toNumber(entry.weight),
+        mood: entry.mood.trim(),
+        notes: entry.notes.trim(),
+        loggedAt: new Date().toISOString(),
+      }
+
+      if (session.accessToken) {
+        void addActivityLogRequest(session.accessToken, {
+          dayLabel: nextEntry.day,
+          steps: nextEntry.steps,
+          activeMinutes: nextEntry.activeMinutes,
+          water: nextEntry.water,
+          sleepHours: nextEntry.sleepHours,
+          sleepQuality: nextEntry.sleepQuality,
+          weight: nextEntry.weight,
+          mood: nextEntry.mood,
+          notes: nextEntry.notes,
+          loggedAt: nextEntry.loggedAt,
+        })
+          .then((response) => {
+            setTrackingState((latestState) => ({
+              ...latestState,
+              activityEntries: latestState.activityEntries.map((item) => (
+                item.id === nextEntry.id ? mapActivityEntry(response) : item
+              )),
+            }))
+          })
+          .catch(() => {})
+      }
+
+      return {
+        ...currentState,
+        activityEntries: [nextEntry, ...currentState.activityEntries],
+      }
+    })
   }
 
   const derivedValue = useMemo(() => {

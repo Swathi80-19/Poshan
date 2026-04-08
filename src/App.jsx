@@ -20,6 +20,7 @@ import ActivityPage from './pages/ActivityPage'
 import PatientDetailPage from './pages/PatientDetailPage'
 import MessagesPage from './pages/MessagesPage'
 import ProfileIntakePage from './pages/ProfileIntakePage'
+import MemberSettingsPage from './pages/MemberSettingsPage'
 
 import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -28,6 +29,17 @@ import AdminAppointments from './pages/admin/AdminAppointments'
 import AdminPayments from './pages/admin/AdminPayments'
 import AdminReports from './pages/admin/AdminReports'
 import AdminProfile from './pages/admin/AdminProfile'
+import { getMemberSession } from './lib/session'
+
+function RequireMemberAuth({ children }) {
+  const session = getMemberSession()
+
+  if (!session.accessToken) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
+}
 
 function App() {
   return (
@@ -46,7 +58,14 @@ function App() {
         <Route path="/admin/login" element={<AdminLoginPage />} />
 
         {/* User App */}
-        <Route path="/app" element={<AppLayout />}>
+        <Route
+          path="/app"
+          element={(
+            <RequireMemberAuth>
+              <AppLayout />
+            </RequireMemberAuth>
+          )}
+        >
           <Route index element={<Navigate to="/app/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="statistics" element={<StatisticsPage />} />
@@ -57,6 +76,7 @@ function App() {
           <Route path="intake" element={<ProfileIntakePage />} />
           <Route path="patients" element={<PatientDetailPage />} />
           <Route path="messages" element={<MessagesPage />} />
+          <Route path="settings" element={<MemberSettingsPage />} />
         </Route>
 
         {/* Admin / Nutritionist App */}

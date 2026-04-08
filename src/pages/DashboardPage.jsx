@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import { useTracking } from '../context/TrackingContext'
+import { getMemberDisplayName } from '../lib/session'
 import {
   getDaySnapshot,
   getMacroTotals,
@@ -69,7 +70,7 @@ function getStrongDayStreak(dailyData) {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const username = localStorage.getItem('poshan_username') || localStorage.getItem('poshan_name') || 'Krishna'
+  const username = getMemberDisplayName()
   const initial = username.charAt(0).toUpperCase()
   const { profile, foodEntries, dailyData, latestDay, summary } = useTracking()
 

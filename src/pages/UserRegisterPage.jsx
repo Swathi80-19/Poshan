@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, AtSign, Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react'
 import poshanLogoWhite from '../assets/poshan-logo-white.svg'
-import { saveMemberSession } from '../lib/session'
+import { clearMemberSession, saveMemberSession } from '../lib/session'
+import { loginMember, registerMember } from '../lib/memberApi'
 
 export default function UserRegisterPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
     name: '',
     username: '',
@@ -17,20 +20,61 @@ export default function UserRegisterPage() {
     confirm: '',
   })
 
+  useEffect(() => {
+    clearMemberSession()
+  }, [])
+
   const setField = (key, value) => {
+    if (error) {
+      setError('')
+    }
+
     setForm((current) => ({ ...current, [key]: value }))
   }
 
-  const handleCreate = (event) => {
+  const handleCreate = async (event) => {
     event.preventDefault()
 
-    saveMemberSession({
-      name: form.name,
-      username: form.username || form.name,
-      email: form.email,
-    })
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
 
-    navigate('/app/intake')
+    if (form.password !== form.confirm) {
+      setError('Password and confirm password must match.')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const email = form.email.trim().toLowerCase()
+      const username = form.username.trim().toLowerCase()
+
+      await registerMember({
+        name: form.name.trim(),
+        username,
+        email,
+        password: form.password,
+      })
+
+      const session = await loginMember({
+        email,
+        password: form.password,
+      })
+
+      saveMemberSession({
+        ...session,
+        phone: form.phone.trim(),
+      })
+
+      navigate('/app/intake')
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to create your account right now.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -57,9 +101,9 @@ export default function UserRegisterPage() {
           </p>
 
           <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
-            <li><span className="feature-dot">•</span><span>Readable daily care summaries.</span></li>
-            <li><span className="feature-dot">•</span><span>Body-profile intake before your first dashboard visit.</span></li>
-            <li><span className="feature-dot">•</span><span>Account-based tracking instead of sample demo data.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Readable daily care summaries.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Body-profile intake before your first dashboard visit.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Account-based tracking instead of sample demo data.</span></li>
           </ul>
         </div>
       </section>
@@ -132,7 +176,7 @@ export default function UserRegisterPage() {
               </div>
 
               <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
-                <span className="feature-dot">•</span>
+                <span className="feature-dot">&bull;</span>
                 <span>After account creation, Poshan will collect your age, height, weight, activity level, and goal details.</span>
               </div>
 
@@ -175,13 +219,20 @@ export default function UserRegisterPage() {
               </div>
 
               <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
-                <span className="feature-dot">✓</span>
+                <span className="feature-dot">&#10003;</span>
                 <span>You agree to the Poshan terms, privacy standards, and the personalized nutrition care experience.</span>
               </div>
 
-              <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
-                Create member account
-                <ArrowRight size={16} />
+              {error ? (
+                <div className="auth-note" style={{ marginBottom: '1.2rem', color: '#bf5f47' }}>
+                  <span className="feature-dot">&bull;</span>
+                  <span>{error}</span>
+                </div>
+              ) : null}
+
+              <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={loading}>
+                {loading ? 'Creating account...' : 'Create member account'}
+                {!loading ? <ArrowRight size={16} /> : null}
               </button>
             </form>
           )}

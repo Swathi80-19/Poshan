@@ -27,6 +27,11 @@ function safeWriteJSON(key, value) {
   window.localStorage.setItem(key, JSON.stringify(value))
 }
 
+function safeRemove(key) {
+  if (!canUseStorage()) return
+  window.localStorage.removeItem(key)
+}
+
 function emitSessionEvent(eventName, detail) {
   if (typeof window === 'undefined') return
   window.dispatchEvent(new CustomEvent(eventName, { detail }))
@@ -69,6 +74,7 @@ function upsertMemberRegistryEntry(session) {
     name: session.name || session.username || 'Member',
     username: session.username || session.name || '',
     email: session.email || '',
+    phone: session.phone || '',
     lastLoginAt: session.lastLoginAt,
   }
 
@@ -89,29 +95,47 @@ function upsertMemberRegistryEntry(session) {
 
 export function getMemberSession() {
   return safeReadJSON(MEMBER_SESSION_KEY, {
+    id: null,
     name: '',
     username: '',
     email: '',
+    phone: '',
+    role: 'MEMBER',
     loginCount: 0,
     lastLoginAt: null,
+    accessToken: '',
   })
 }
 
-export function saveMemberSession({ name = '', username = '', email = '' }) {
+export function saveMemberSession({
+  id = null,
+  name = '',
+  username = '',
+  email = '',
+  phone = '',
+  role = 'MEMBER',
+  loginCount,
+  lastLoginAt,
+  accessToken = '',
+}) {
   const normalizedUsername = username || name || email.split('@')[0] || 'member'
   const counts = getLoginCounts()
   const identityKey = slugifyIdentity(normalizedUsername)
-  const nextCount = (counts[identityKey] || 0) + 1
+  const nextCount = Number.isFinite(loginCount) ? loginCount : (counts[identityKey] || 0) + 1
 
   counts[identityKey] = nextCount
   setLoginCounts(counts)
 
   const session = {
+    id,
     name: name || normalizedUsername,
     username: normalizedUsername,
     email,
+    phone,
+    role,
     loginCount: nextCount,
-    lastLoginAt: new Date().toISOString(),
+    lastLoginAt: lastLoginAt || new Date().toISOString(),
+    accessToken,
   }
 
   if (canUseStorage()) {
@@ -123,6 +147,31 @@ export function saveMemberSession({ name = '', username = '', email = '' }) {
   safeWriteJSON(MEMBER_SESSION_KEY, session)
   emitSessionEvent(MEMBER_SESSION_EVENT, session)
   return session
+}
+
+export function clearMemberSession() {
+  safeRemove(MEMBER_SESSION_KEY)
+
+  if (canUseStorage()) {
+    window.localStorage.removeItem('poshan_username')
+    window.localStorage.removeItem('poshan_name')
+  }
+
+  emitSessionEvent(MEMBER_SESSION_EVENT, getMemberSession())
+}
+
+export function deleteCurrentMemberLocalData() {
+  const session = getMemberSession()
+  const identity = slugifyIdentity(session.username || session.email || session.name)
+  const registry = getMemberRegistry().filter((entry) => entry.id !== identity)
+  const counts = getLoginCounts()
+
+  delete counts[identity]
+  setLoginCounts(counts)
+  saveMemberRegistry(registry)
+  safeRemove(`poshan_tracking_v2_${identity}`)
+  safeRemove(`${PAYMENT_STATUS_PREFIX}_${identity}`)
+  clearMemberSession()
 }
 
 export function getMemberDisplayName() {

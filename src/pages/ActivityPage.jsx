@@ -17,6 +17,7 @@ import {
   getDaySnapshot,
   round,
 } from '../lib/tracking'
+import { getMemberDisplayName } from '../lib/session'
 
 function createFoodForm(day) {
   return {
@@ -46,7 +47,7 @@ function createActivityForm(day) {
 }
 
 export default function ActivityPage() {
-  const username = localStorage.getItem('poshan_username') || localStorage.getItem('poshan_name') || 'Krishna'
+  const username = getMemberDisplayName()
   const initial = username.charAt(0).toUpperCase()
   const {
     profile,
