@@ -1,230 +1,443 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Search, SlidersHorizontal, Bell, Calendar, Clock, CheckCircle2, XCircle, Star, MessageSquare, RotateCcw } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  Bell,
+  Droplets,
+  Dumbbell,
+  MoonStar,
+  Save,
+  Scale,
+  Target,
+  Utensils,
+} from 'lucide-react'
+import { useTracking } from '../context/TrackingContext'
+import {
+  DAY_ORDER,
+  MEAL_OPTIONS,
+  formatDateTime,
+  getDaySnapshot,
+  round,
+} from '../lib/tracking'
 
-const upcoming = [
-    {
-        id: 1, name: 'Dr. Bipasha', specialty: 'M.Sc in Nutrition & Dietetics',
-        date: 'Today, 3:00 PM', status: 'Active', statusColor: '#22C55E',
-        initials: 'BP', color: 'linear-gradient(135deg, #D8EDD0, #8BAF7C)', rating: 4.9,
-    },
-]
-
-const completed = [
-    {
-        id: 2, name: 'Dr. Sara Ali Khan', specialty: 'B.Sc in Nutritional Science',
-        date: '4 days ago, 11:00 AM', status: 'Completed', statusColor: '#3B82F6',
-        initials: 'SK', color: '#DBEAFE', rating: 4.8,
-    },
-    {
-        id: 3, name: 'Dr. Aishwarya', specialty: 'M.Sc in Clinical Nutrition',
-        date: '2 weeks ago, 10:30 AM', status: 'Completed', statusColor: '#3B82F6',
-        initials: 'AI', color: '#E8F1E4', rating: 4.7,
-    },
-]
-
-const cancelled = [
-    {
-        id: 4, name: 'Dr. Athlone', specialty: 'B.Sc in Food Science',
-        date: '3 weeks ago', status: 'Cancelled', statusColor: '#EF4444',
-        initials: 'AT', color: '#FEF9C3', rating: null,
-    },
-]
-
-function StarRating({ rating }) {
-    if (!rating) return null
-    return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 3 }}>
-            {[1, 2, 3, 4, 5].map(i => (
-                <Star key={i} size={10} fill={i <= Math.round(rating) ? '#EAB308' : 'none'} color={i <= Math.round(rating) ? '#EAB308' : '#D1D5DB'} />
-            ))}
-            <span style={{ fontSize: 11, color: '#6B7280', marginLeft: 2 }}>{rating}</span>
-        </div>
-    )
+function createFoodForm(day) {
+  return {
+    day,
+    mealType: 'Breakfast',
+    foodName: '',
+    calories: '',
+    protein: '',
+    carbs: '',
+    fats: '',
+    fiber: '',
+  }
 }
 
-function AppointmentCard({ appt, navigate, showRebook }) {
-    return (
-        <div style={{
-            display: 'flex', alignItems: 'center', gap: 14,
-            padding: '16px 20px', background: 'white', borderRadius: 18,
-            border: '1px solid #F3F4F6', transition: 'all 0.2s', cursor: 'pointer', marginBottom: 10,
-        }}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.08)'}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
-            onClick={() => navigate(`/app/doctor/${appt.id}`)}
-        >
-            <div style={{
-                width: 52, height: 52, borderRadius: '50%',
-                background: appt.color,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 800, fontSize: 15, color: '#374151', flexShrink: 0,
-                border: appt.status === 'Active' ? '2.5px solid #8BAF7C' : 'none',
-            }}>
-                {appt.initials}
-            </div>
-            <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: '#111827', marginBottom: 1 }}>{appt.name}</div>
-                <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 3 }}>{appt.specialty}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#6B7280' }}>
-                    <Clock size={11} /><span>{appt.date}</span>
-                </div>
-                <StarRating rating={appt.rating} />
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-                <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                    fontSize: 11, fontWeight: 600,
-                    background: appt.statusColor + '18', color: appt.statusColor,
-                    padding: '4px 10px', borderRadius: 20
-                }}>
-                    {appt.status === 'Completed' ? <CheckCircle2 size={10} /> : appt.status === 'Cancelled' ? <XCircle size={10} /> : <div style={{ width: 6, height: 6, borderRadius: '50%', background: appt.statusColor }} />}
-                    {appt.status}
-                </span>
-                {showRebook && appt.status !== 'Active' && (
-                    <button
-                        className="btn btn-secondary"
-                        style={{ padding: '5px 10px', fontSize: 11 }}
-                        onClick={e => { e.stopPropagation(); navigate('/app/search') }}
-                    >
-                        <RotateCcw size={10} /> Rebook
-                    </button>
-                )}
-                {appt.status === 'Active' && (
-                    <button
-                        className="btn btn-primary"
-                        style={{ padding: '5px 10px', fontSize: 11 }}
-                        onClick={e => { e.stopPropagation(); navigate('/app/messages') }}
-                    >
-                        <MessageSquare size={10} /> Message
-                    </button>
-                )}
-            </div>
-        </div>
-    )
+function createActivityForm(day) {
+  return {
+    day,
+    steps: '',
+    activeMinutes: '',
+    water: '',
+    sleepHours: '',
+    sleepQuality: '',
+    weight: '',
+    mood: '',
+    notes: '',
+  }
 }
 
 export default function ActivityPage() {
-    const navigate = useNavigate()
-    const [searchQ, setSearchQ] = useState('')
-    const total = upcoming.length + completed.length + cancelled.length
+  const username = localStorage.getItem('poshan_username') || localStorage.getItem('poshan_name') || 'Krishna'
+  const initial = username.charAt(0).toUpperCase()
+  const {
+    profile,
+    dailyData,
+    latestDay,
+    foodEntries,
+    activityEntries,
+    updateProfile,
+    addFoodEntry,
+    addActivityEntry,
+  } = useTracking()
 
-    return (
-        <div className="animate-fade">
-            <div className="page-header">
-                <div className="page-header-left">
-                    <span className="page-header-greeting">Your health records</span>
-                    <span className="page-header-title">Activity</span>
-                </div>
-                <div className="page-header-right">
-                    <div className="search-input-wrap" style={{ width: 220 }}>
-                        <Search size={15} color="#9CA3AF" />
-                        <input
-                            placeholder="Search appointments..."
-                            value={searchQ}
-                            onChange={e => setSearchQ(e.target.value)}
-                        />
-                    </div>
-                    <button className="header-icon-btn"><SlidersHorizontal size={18} /></button>
-                    <button className="header-icon-btn"><Bell size={18} /></button>
-                    <div className="header-avatar">K</div>
-                </div>
-            </div>
+  const [goalDraft, setGoalDraft] = useState(profile)
+  const [foodForm, setFoodForm] = useState(() => createFoodForm(latestDay))
+  const [activityForm, setActivityForm] = useState(() => createActivityForm(latestDay))
 
-            <div className="page-body">
-                {/* KPI strip */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
-                    {[
-                        { label: 'Total Sessions', val: total, color: '#E8F1E4', tc: '#4D7A3E', icon: '📅' },
-                        { label: 'Completed', val: completed.length, color: '#DBEAFE', tc: '#3B82F6', icon: '✅' },
-                        { label: 'Upcoming', val: upcoming.length, color: '#E8F1E4', tc: '#22C55E', icon: '⏰' },
-                        { label: 'Cancelled', val: cancelled.length, color: '#FEE2E2', tc: '#EF4444', icon: '❌' },
-                    ].map(({ label, val, color, tc, icon }) => (
-                        <div key={label} style={{ background: color, borderRadius: 18, padding: '18px 20px' }}>
-                            <span style={{ fontSize: 22 }}>{icon}</span>
-                            <div style={{ fontSize: 28, fontWeight: 800, color: tc, margin: '8px 0 2px' }}>{val}</div>
-                            <div style={{ fontSize: 12, color: tc + 'CC', fontWeight: 500 }}>{label}</div>
-                        </div>
-                    ))}
-                </div>
+  useEffect(() => {
+    setGoalDraft(profile)
+  }, [profile])
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28 }}>
-                    {/* Upcoming */}
-                    <div>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                            <span className="section-title" style={{ marginBottom: 0 }}>Upcoming Appointments</span>
-                            <span style={{ background: '#E8F1E4', color: '#5A8A4A', fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
-                                {upcoming.length} active
-                            </span>
-                        </div>
+  const todaySnapshot = useMemo(() => getDaySnapshot(dailyData, latestDay), [dailyData, latestDay])
 
-                        {upcoming.length > 0 ? upcoming.map(appt => (
-                            <AppointmentCard key={appt.id} appt={appt} navigate={navigate} showRebook={false} />
-                        )) : (
-                            <div style={{ textAlign: 'center', padding: 40, background: 'white', borderRadius: 18, border: '1px dashed #E5E7EB', color: '#9CA3AF', fontSize: 14 }}>
-                                No upcoming appointments
-                            </div>
-                        )}
+  const recentFoodEntries = useMemo(
+    () => [...foodEntries].sort((left, right) => new Date(right.loggedAt) - new Date(left.loggedAt)).slice(0, 5),
+    [foodEntries],
+  )
 
-                        {/* Upcoming appointment detail card */}
-                        {upcoming[0] && (
-                            <div style={{
-                                background: 'linear-gradient(135deg, #8BAF7C 0%, #4D7A3E 100%)',
-                                borderRadius: 22, padding: 24, color: 'white', marginTop: 8,
-                                position: 'relative', overflow: 'hidden'
-                            }}>
-                                <div style={{ position: 'absolute', right: -20, top: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
-                                <div style={{ fontSize: 12, opacity: 0.8, marginBottom: 4 }}>Next session with</div>
-                                <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>{upcoming[0].name}</div>
-                                <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 14 }}>{upcoming[0].specialty}</div>
-                                <div style={{ display: 'flex', gap: 10 }}>
-                                    <button
-                                        style={{ background: 'white', color: '#4D7A3E', border: 'none', borderRadius: 20, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-                                        onClick={() => navigate('/app/messages')}
-                                    >
-                                        💬 Message
-                                    </button>
-                                    <button
-                                        style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: 20, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
-                                    >
-                                        📅 Reschedule
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
+  const recentActivityEntries = useMemo(
+    () => [...activityEntries].sort((left, right) => new Date(right.loggedAt) - new Date(left.loggedAt)).slice(0, 5),
+    [activityEntries],
+  )
 
-                    {/* Completed + Cancelled */}
-                    <div>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                            <span className="section-title" style={{ marginBottom: 0 }}>Completed Appointments</span>
-                            <span style={{ background: '#DBEAFE', color: '#3B82F6', fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
-                                {completed.length} done
-                            </span>
-                        </div>
+  const totalCheckIns = activityEntries.length
+  const mealCoverage = round((todaySnapshot.calories / profile.calorieGoal) * 100)
+  const hydrationCoverage = round((todaySnapshot.water / profile.waterGoal) * 100)
+  const activityCoverage = round(
+    (((todaySnapshot.steps / profile.stepGoal) + (todaySnapshot.activeMinutes / profile.activeMinutesGoal)) / 2) * 100,
+  )
 
-                        {completed.map(appt => (
-                            <AppointmentCard key={appt.id} appt={appt} navigate={navigate} showRebook={true} />
-                        ))}
+  const handleGoalSubmit = (event) => {
+    event.preventDefault()
+    updateProfile(goalDraft)
+  }
 
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '20px 0 14px' }}>
-                            <span className="section-title" style={{ marginBottom: 0 }}>Cancelled</span>
-                        </div>
+  const handleFoodSubmit = (event) => {
+    event.preventDefault()
 
-                        {cancelled.map(appt => (
-                            <AppointmentCard key={appt.id} appt={appt} navigate={navigate} showRebook={true} />
-                        ))}
+    if (!foodForm.foodName.trim()) {
+      return
+    }
 
-                        <button
-                            className="btn btn-primary"
-                            style={{ width: '100%', marginTop: 14, padding: 14, fontSize: 14 }}
-                            onClick={() => navigate('/app/search')}
-                        >
-                            <Calendar size={16} /> Book New Appointment
-                        </button>
-                    </div>
-                </div>
-            </div>
+    addFoodEntry(foodForm)
+    setFoodForm(createFoodForm(foodForm.day))
+  }
+
+  const handleActivitySubmit = (event) => {
+    event.preventDefault()
+    addActivityEntry(activityForm)
+    setActivityForm(createActivityForm(activityForm.day))
+  }
+
+  return (
+    <div className="animate-fade">
+      <div className="page-header">
+        <div className="page-header-left">
+          <span className="page-header-greeting">Daily tracker</span>
+          <span className="page-header-title">Nutrition & activity inputs</span>
         </div>
-    )
+        <div className="page-header-right">
+          <span className="badge badge-green">{latestDay} in focus</span>
+          <button className="header-icon-btn"><Bell size={18} /></button>
+          <div className="header-avatar">{initial}</div>
+        </div>
+      </div>
+
+      <div className="page-body">
+        <div className="summary-grid">
+          {[
+            { label: 'Meals logged', value: foodEntries.length, foot: `${todaySnapshot.meals} meals on ${latestDay}`, icon: Utensils, accent: '#73955f', tone: '#eef3ef' },
+            { label: 'Diet goal coverage', value: `${Math.min(mealCoverage, 100)}%`, foot: `${todaySnapshot.calories}/${profile.calorieGoal} kcal today`, icon: Target, accent: '#c9953b', tone: '#f8eccc' },
+            { label: 'Hydration pace', value: `${Math.min(hydrationCoverage, 100)}%`, foot: `${todaySnapshot.water}/${profile.waterGoal} ml today`, icon: Droplets, accent: '#4d82b7', tone: '#e8f0fb' },
+            { label: 'Activity logs', value: totalCheckIns, foot: `${Math.min(activityCoverage, 100)}% movement coverage`, icon: Dumbbell, accent: '#7a61b8', tone: '#f1ede6' },
+          ].map((item) => {
+            const Icon = item.icon
+
+            return (
+              <div key={item.label} className="metric-card">
+                <div className="metric-card-top">
+                  <div className="metric-card-icon" style={{ background: item.tone }}>
+                    <Icon size={18} color={item.accent} />
+                  </div>
+                  <span style={{ color: item.accent, fontWeight: 800 }}>Live</span>
+                </div>
+                <div className="metric-card-value" style={{ color: item.accent }}>{item.value}</div>
+                <div className="metric-card-label">{item.label}</div>
+                <div className="metric-card-foot">{item.foot}</div>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="g-2">
+          <section className="support-card">
+            <div className="dashboard-panel-heading">
+              <div>
+                <h3>Goal settings</h3>
+                <p>These targets power the coverage bars and all chart calculations.</p>
+              </div>
+              <span className="badge badge-amber">Shared across dashboard</span>
+            </div>
+
+            <form onSubmit={handleGoalSubmit}>
+              <div className="tracker-form-grid tracker-form-grid-3">
+                {[
+                  ['Calorie goal', 'calorieGoal', 'kcal'],
+                  ['Protein goal', 'proteinGoal', 'g'],
+                  ['Carbs goal', 'carbsGoal', 'g'],
+                  ['Fats goal', 'fatsGoal', 'g'],
+                  ['Fiber goal', 'fiberGoal', 'g'],
+                  ['Water goal', 'waterGoal', 'ml'],
+                  ['Step goal', 'stepGoal', 'steps'],
+                  ['Active minutes', 'activeMinutesGoal', 'min'],
+                  ['Sleep goal', 'sleepGoal', 'hrs'],
+                ].map(([label, key, unit]) => (
+                  <label key={key} className="form-group">
+                    <span className="form-label">
+                      {label}
+                      <span className="tracker-field-unit">{unit}</span>
+                    </span>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="0"
+                      value={goalDraft[key]}
+                      onChange={(event) => setGoalDraft((current) => ({ ...current, [key]: event.target.value }))}
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="hero-actions" style={{ marginTop: '1rem' }}>
+                <button className="btn btn-primary" type="submit">
+                  <Save size={16} />
+                  Save goals
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <section className="support-card">
+            <div className="dashboard-panel-heading">
+              <div>
+                <h3>Meal input</h3>
+                <p>Add foods and macros so the calorie and nutrient graphs change immediately.</p>
+              </div>
+              <span className="badge badge-green">Food log</span>
+            </div>
+
+            <form onSubmit={handleFoodSubmit}>
+              <div className="tracker-form-grid tracker-form-grid-2">
+                <label className="form-group">
+                  <span className="form-label">Day</span>
+                  <select
+                    className="form-input"
+                    value={foodForm.day}
+                    onChange={(event) => setFoodForm((current) => ({ ...current, day: event.target.value }))}
+                  >
+                    {DAY_ORDER.map((day) => (
+                      <option key={day} value={day}>{day}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="form-group">
+                  <span className="form-label">Meal type</span>
+                  <select
+                    className="form-input"
+                    value={foodForm.mealType}
+                    onChange={(event) => setFoodForm((current) => ({ ...current, mealType: event.target.value }))}
+                  >
+                    {MEAL_OPTIONS.map((mealType) => (
+                      <option key={mealType} value={mealType}>{mealType}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="form-group tracker-form-span-2">
+                  <span className="form-label">Food name</span>
+                  <input
+                    className="form-input"
+                    placeholder="Example: Roti, dal, and mixed vegetables"
+                    value={foodForm.foodName}
+                    onChange={(event) => setFoodForm((current) => ({ ...current, foodName: event.target.value }))}
+                  />
+                </label>
+
+                {[
+                  ['Calories', 'calories'],
+                  ['Protein (g)', 'protein'],
+                  ['Carbs (g)', 'carbs'],
+                  ['Fats (g)', 'fats'],
+                  ['Fiber (g)', 'fiber'],
+                ].map(([label, key]) => (
+                  <label key={key} className="form-group">
+                    <span className="form-label">{label}</span>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="0"
+                      value={foodForm[key]}
+                      onChange={(event) => setFoodForm((current) => ({ ...current, [key]: event.target.value }))}
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="hero-actions" style={{ marginTop: '1rem' }}>
+                <button className="btn btn-primary" type="submit">
+                  <Utensils size={16} />
+                  Add meal
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <div className="g-2">
+          <section className="support-card">
+            <div className="dashboard-panel-heading">
+              <div>
+                <h3>Activity & recovery input</h3>
+                <p>Track movement, water, sleep, body weight, and quick notes in one place.</p>
+              </div>
+              <span className="badge badge-sky">Daily check-in</span>
+            </div>
+
+            <form onSubmit={handleActivitySubmit}>
+              <div className="tracker-form-grid tracker-form-grid-2">
+                <label className="form-group">
+                  <span className="form-label">Day</span>
+                  <select
+                    className="form-input"
+                    value={activityForm.day}
+                    onChange={(event) => setActivityForm((current) => ({ ...current, day: event.target.value }))}
+                  >
+                    {DAY_ORDER.map((day) => (
+                      <option key={day} value={day}>{day}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="form-group">
+                  <span className="form-label">Mood</span>
+                  <input
+                    className="form-input"
+                    placeholder="Focused, tired, strong..."
+                    value={activityForm.mood}
+                    onChange={(event) => setActivityForm((current) => ({ ...current, mood: event.target.value }))}
+                  />
+                </label>
+
+                {[
+                  ['Steps', 'steps'],
+                  ['Active minutes', 'activeMinutes'],
+                  ['Water (ml)', 'water'],
+                  ['Sleep hours', 'sleepHours'],
+                  ['Sleep quality %', 'sleepQuality'],
+                  ['Weight (kg)', 'weight'],
+                ].map(([label, key]) => (
+                  <label key={key} className="form-group">
+                    <span className="form-label">{label}</span>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="0"
+                      step={key === 'sleepHours' || key === 'weight' ? '0.1' : '1'}
+                      value={activityForm[key]}
+                      onChange={(event) => setActivityForm((current) => ({ ...current, [key]: event.target.value }))}
+                    />
+                  </label>
+                ))}
+
+                <label className="form-group tracker-form-span-2">
+                  <span className="form-label">Notes</span>
+                  <textarea
+                    className="form-input tracker-textarea"
+                    placeholder="Short note about workout, appetite, fatigue, or recovery."
+                    value={activityForm.notes}
+                    onChange={(event) => setActivityForm((current) => ({ ...current, notes: event.target.value }))}
+                  />
+                </label>
+              </div>
+
+              <div className="hero-actions" style={{ marginTop: '1rem' }}>
+                <button className="btn btn-primary" type="submit">
+                  <Dumbbell size={16} />
+                  Save check-in
+                </button>
+              </div>
+            </form>
+          </section>
+
+          <section className="support-card">
+            <div className="dashboard-panel-heading">
+              <div>
+                <h3>{latestDay} snapshot</h3>
+                <p>What the graphs will read from right now.</p>
+              </div>
+              <span className="badge badge-violet">{todaySnapshot.adherence}% adherence</span>
+            </div>
+
+            <div className="tracker-snapshot-grid">
+              {[
+                { label: 'Calories', value: `${todaySnapshot.calories} kcal`, meta: `${mealCoverage}% of target`, icon: Target, accent: '#c9953b', tone: '#f8eccc' },
+                { label: 'Water', value: `${todaySnapshot.water} ml`, meta: `${hydrationCoverage}% of target`, icon: Droplets, accent: '#4d82b7', tone: '#e8f0fb' },
+                { label: 'Movement', value: `${todaySnapshot.activeMinutes} min`, meta: `${todaySnapshot.steps} steps`, icon: Dumbbell, accent: '#73955f', tone: '#eef3ef' },
+                { label: 'Recovery', value: `${todaySnapshot.sleepHours || 0} hrs`, meta: `${todaySnapshot.sleepQuality || 0}% quality`, icon: MoonStar, accent: '#7a61b8', tone: '#f1ede6' },
+                { label: 'Weight', value: todaySnapshot.weight ? `${todaySnapshot.weight} kg` : 'No entry', meta: 'Latest logged value', icon: Scale, accent: '#bf5f47', tone: '#f3e4d8' },
+                { label: 'Macros', value: `${todaySnapshot.protein}g protein`, meta: `${todaySnapshot.carbs}g carbs | ${todaySnapshot.fats}g fats`, icon: Utensils, accent: '#465c39', tone: '#eef3ef' },
+              ].map((item) => {
+                const Icon = item.icon
+
+                return (
+                  <div key={item.label} className="tracker-snapshot-card">
+                    <div className="metric-card-top">
+                      <div className="metric-card-icon" style={{ background: item.tone }}>
+                        <Icon size={17} color={item.accent} />
+                      </div>
+                    </div>
+                    <strong>{item.value}</strong>
+                    <span>{item.label}</span>
+                    <small>{item.meta}</small>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        </div>
+
+        <div className="g-2">
+          <section className="support-card">
+            <div className="dashboard-panel-heading">
+              <div>
+                <h3>Recent food entries</h3>
+                <p>Latest inputs feeding your calorie and macro charts.</p>
+              </div>
+              <span className="badge badge-green">{recentFoodEntries.length} visible</span>
+            </div>
+
+            <div className="tracker-log-list">
+              {recentFoodEntries.map((entry) => (
+                <div key={entry.id} className="tracker-log-item">
+                  <div>
+                    <div className="tracker-log-title">{entry.foodName}</div>
+                    <div className="tracker-log-meta">{entry.day} · {entry.mealType} · {formatDateTime(entry.loggedAt)}</div>
+                  </div>
+                  <div className="tracker-log-values">
+                    <strong>{entry.calories} kcal</strong>
+                    <span>{entry.protein}P / {entry.carbs}C / {entry.fats}F / {entry.fiber}Fi</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="support-card">
+            <div className="dashboard-panel-heading">
+              <div>
+                <h3>Recent activity entries</h3>
+                <p>Movement and recovery check-ins that update the performance graphs.</p>
+              </div>
+              <span className="badge badge-sky">{recentActivityEntries.length} visible</span>
+            </div>
+
+            <div className="tracker-log-list">
+              {recentActivityEntries.map((entry) => (
+                <div key={entry.id} className="tracker-log-item">
+                  <div>
+                    <div className="tracker-log-title">{entry.day} wellness log</div>
+                    <div className="tracker-log-meta">{formatDateTime(entry.loggedAt)}{entry.mood ? ` · ${entry.mood}` : ''}</div>
+                  </div>
+                  <div className="tracker-log-values">
+                    <strong>{entry.steps} steps</strong>
+                    <span>{entry.activeMinutes} min · {entry.water} ml · {entry.sleepHours} hrs</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  )
 }

@@ -1,233 +1,306 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Bell, TrendingUp, Download, CreditCard, ArrowUpRight, ArrowDownLeft, DollarSign, Clock } from 'lucide-react'
+import { Bell, Clock3, CreditCard, Download, TrendingUp, Wallet } from 'lucide-react'
 import {
-    BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
+  BarChart,
+  Bar,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts'
+import { getNutritionistSession } from '../../lib/session'
 
 const monthlyData = [
-    { month: 'Aug', income: 32000, payout: 25600 },
-    { month: 'Sep', income: 41000, payout: 32800 },
-    { month: 'Oct', income: 38000, payout: 30400 },
-    { month: 'Nov', income: 52000, payout: 41600 },
-    { month: 'Dec', income: 47000, payout: 37600 },
-    { month: 'Jan', income: 63000, payout: 50400 },
-    { month: 'Feb', income: 58000, payout: 46400 },
+  { month: 'Aug', income: 32000, payout: 25600 },
+  { month: 'Sep', income: 41000, payout: 32800 },
+  { month: 'Oct', income: 38000, payout: 30400 },
+  { month: 'Nov', income: 52000, payout: 41600 },
+  { month: 'Dec', income: 47000, payout: 37600 },
+  { month: 'Jan', income: 63000, payout: 50400 },
+  { month: 'Feb', income: 58000, payout: 46400 },
 ]
 
 const transactions = [
-    { id: 'TXN001', patient: 'Rekha Sharma', amount: 1500, type: 'credit', date: 'Feb 27, 2026', plan: '1 Month Plan', status: 'completed', initials: 'RS', color: '#FEF9C3' },
-    { id: 'TXN002', patient: 'Krishna Murthy', amount: 4500, type: 'credit', date: 'Feb 25, 2026', plan: '5 Month Plan', status: 'completed', initials: 'KM', color: '#DBEAFE' },
-    { id: 'TXN003', patient: 'Priya Verma', amount: 10000, type: 'credit', date: 'Feb 22, 2026', plan: 'Yearly Plan', status: 'completed', initials: 'PV', color: '#EDE9FE' },
-    { id: 'TXN004', patient: 'Payout', amount: 46400, type: 'debit', date: 'Feb 20, 2026', plan: 'Bank Transfer', status: 'processed', initials: '🏦', color: '#ECFDF5' },
-    { id: 'TXN005', patient: 'Arjun Reddy', amount: 750, type: 'credit', date: 'Feb 18, 2026', plan: '1 Day Plan', status: 'pending', initials: 'AR', color: '#FEE2E2' },
-    { id: 'TXN006', patient: 'Sunita Patel', amount: 1500, type: 'credit', date: 'Feb 15, 2026', plan: '1 Month Plan', status: 'completed', initials: 'SP', color: '#ECFDF5' },
+  { id: 'TXN001', patient: 'Rekha Sharma', amount: 1500, type: 'credit', date: 'Feb 27, 2026', plan: '1 month plan', status: 'completed', initials: 'RS', color: '#f8eccc' },
+  { id: 'TXN002', patient: 'Krishna Murthy', amount: 4500, type: 'credit', date: 'Feb 25, 2026', plan: '5 month plan', status: 'completed', initials: 'KM', color: '#e8f0fb' },
+  { id: 'TXN003', patient: 'Priya Verma', amount: 10000, type: 'credit', date: 'Feb 22, 2026', plan: 'Yearly plan', status: 'completed', initials: 'PV', color: '#eee6fa' },
+  { id: 'TXN004', patient: 'Clinic payout', amount: 46400, type: 'debit', date: 'Feb 20, 2026', plan: 'Bank transfer', status: 'processed', initials: 'PY', color: '#e7efe0' },
+  { id: 'TXN005', patient: 'Arjun Reddy', amount: 750, type: 'credit', date: 'Feb 18, 2026', plan: '1 day plan', status: 'pending', initials: 'AR', color: '#fde8e2' },
+  { id: 'TXN006', patient: 'Sunita Patel', amount: 1500, type: 'credit', date: 'Feb 15, 2026', plan: '1 month plan', status: 'completed', initials: 'SP', color: '#e7efe0' },
 ]
 
-const CustomTooltip = ({ active, payload }) =>
-    active && payload?.length ? (
-        <div style={{ background: '#0D1B0A', padding: '10px 14px', borderRadius: 12, fontSize: 12, border: '1px solid rgba(127,168,112,0.2)' }}>
-            <div style={{ color: '#9BBF8A' }}>Income: <span style={{ color: 'white', fontWeight: 700 }}>₹{payload[0]?.value?.toLocaleString()}</span></div>
-            <div style={{ color: '#9CA3AF' }}>Payout: <span style={{ color: 'white', fontWeight: 700 }}>₹{payload[1]?.value?.toLocaleString()}</span></div>
-        </div>
-    ) : null
+const statCards = [
+  { label: 'Total earned', value: 'Rs 3.31L', foot: 'Across the last 7 months', tone: '#e7efe0', accent: '#73955f' },
+  { label: 'This month', value: 'Rs 58,000', foot: 'Current cycle collections', tone: '#e8f0fb', accent: '#4d82b7' },
+  { label: 'Pending payout', value: 'Rs 11,600', foot: 'Waiting for settlement', tone: '#f8eccc', accent: '#c9953b' },
+  { label: 'Next payout', value: 'Mar 1', foot: 'Estimated transfer date', tone: '#eee6fa', accent: '#7a61b8' },
+]
+
+const CustomTooltip = ({ active, payload }) => (
+  active && payload?.length ? (
+    <div className="admin-chart-tooltip">
+      <div>Income: <strong>Rs {payload[0]?.value?.toLocaleString('en-IN')}</strong></div>
+      <div>Payout: <strong>Rs {payload[1]?.value?.toLocaleString('en-IN')}</strong></div>
+    </div>
+  ) : null
+)
 
 export default function AdminPayments() {
-    const [activeFilter, setActiveFilter] = useState('All')
+  const [activeFilter, setActiveFilter] = useState('All')
+  const session = getNutritionistSession()
+  const displayName = session.username || session.name || 'Nutritionist'
 
-    const filtered = transactions.filter(t =>
-        activeFilter === 'All' ? true :
-            activeFilter === 'Received' ? t.type === 'credit' && t.patient !== 'Payout' :
-                activeFilter === 'Payouts' ? t.patient === 'Payout' :
-                    t.status === activeFilter.toLowerCase()
-    )
+  const filteredTransactions = transactions.filter((transaction) => {
+    if (activeFilter === 'All') return true
+    if (activeFilter === 'Received') return transaction.type === 'credit' && transaction.patient !== 'Clinic payout'
+    if (activeFilter === 'Payouts') return transaction.patient === 'Clinic payout'
+    return transaction.status === activeFilter.toLowerCase()
+  })
 
-    return (
-        <div className="anim-fade">
-            <div className="admin-page-header">
-                <div>
-                    <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 2 }}>Track your earnings</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: '#0D1B0A' }}>Payments</div>
-                </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                    <button className="icon-btn"><Bell size={17} /></button>
-                    <button style={{
-                        padding: '9px 18px', borderRadius: 50,
-                        background: '#F4FAF1', color: '#4D7A3E',
-                        border: '1.5px solid #C8E8BA', cursor: 'pointer',
-                        fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6,
-                        fontFamily: 'Chillax, Plus Jakarta Sans, sans-serif'
-                    }}>
-                        <Download size={14} /> Export Report
-                    </button>
-                </div>
-            </div>
-
-            <div className="page-body">
-                {/* Payment summary cards */}
-                <div className="grid-4" style={{ marginBottom: 24 }}>
-                    {[
-                        { label: 'Total Earned', val: '₹3.31L', sub: 'Last 7 months', icon: DollarSign, bg: '#E8F5E2', ic: '#4D7A3E', up: true },
-                        { label: 'This Month', val: '₹58,000', sub: 'Feb 2026', icon: TrendingUp, bg: '#DBEAFE', ic: '#1D4ED8', up: true },
-                        { label: 'Pending Payout', val: '₹11,600', sub: 'Processing', icon: Clock, bg: '#FEF9C3', ic: '#92400E', up: false },
-                        { label: 'Next Payout', val: 'Mar 1', sub: 'Estimated', icon: CreditCard, bg: '#EDE9FE', ic: '#5B21B6', up: true },
-                    ].map(({ label, val, sub, icon: Icon, bg, ic, up }) => (
-                        <div key={label} className="stat-widget">
-                            <div className="stat-widget-icon" style={{ background: bg }}>
-                                <Icon size={20} color={ic} />
-                            </div>
-                            <div className="stat-widget-value" style={{ fontSize: 22 }}>{val}</div>
-                            <div className="stat-widget-label">{label}</div>
-                            <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>{sub}</div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Virtual payment card + chart */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 24, marginBottom: 24 }}>
-                    {/* Revenue chart */}
-                    <div className="card" style={{ padding: 26 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-                            <div className="section-title">Revenue vs Payouts</div>
-                            <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
-                                {[['#7FA870', 'Income'], ['#D1D5DB', 'Payout']].map(([c, l]) => (
-                                    <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#6B7280' }}>
-                                        <div style={{ width: 10, height: 10, borderRadius: 3, background: c }} />
-                                        {l}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <ResponsiveContainer width="100%" height={200}>
-                            <BarChart data={monthlyData} barSize={18} barGap={4}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-                                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
-                                <YAxis hide />
-                                <Tooltip content={<CustomTooltip />} cursor={false} />
-                                <Bar dataKey="income" fill="#7FA870" radius={[6, 6, 0, 0]} />
-                                <Bar dataKey="payout" fill="#E5E7EB" radius={[6, 6, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    {/* Virtual payment card */}
-                    <div>
-                        <div className="payment-card" style={{ marginBottom: 16 }}>
-                            <div style={{ position: 'relative', zIndex: 1 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
-                                    <div>
-                                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 500, letterSpacing: '0.5px' }}>POSHAN EARNINGS</div>
-                                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>Dr. Bipasha</div>
-                                    </div>
-                                    <div style={{ width: 40, height: 28, borderRadius: 6, background: 'rgba(127,168,112,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#7FA870', opacity: 0.8 }} />
-                                    </div>
-                                </div>
-                                <div style={{ fontSize: 28, fontWeight: 700, color: 'white', letterSpacing: '-0.5px', marginBottom: 16 }}>
-                                    ₹58,000
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <div>
-                                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>THIS MONTH</div>
-                                        <div style={{ fontSize: 13, color: 'white', fontWeight: 600 }}>February 2026</div>
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>NEXT PAYOUT</div>
-                                        <div style={{ fontSize: 13, color: '#9BBF8A', fontWeight: 600 }}>Mar 1, 2026</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Quick stats */}
-                        <div className="card" style={{ padding: 16 }}>
-                            {[
-                                { label: 'Avg. per Session', val: '₹1,208', icon: '📊' },
-                                { label: 'Plan Revenue', val: '₹46,500', icon: '💳' },
-                                { label: 'Refunds', val: '₹0', icon: '↩️' },
-                            ].map(({ label, val, icon }) => (
-                                <div key={label} style={{
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                    padding: '9px 0', borderBottom: '1px solid #F9FAFB'
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#6B7280' }}>
-                                        <span>{icon}</span>{label}
-                                    </div>
-                                    <span style={{ fontSize: 14, fontWeight: 700, color: '#111827' }}>{val}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Transactions */}
-                <div className="card" style={{ overflow: 'hidden' }}>
-                    <div style={{ padding: '18px 22px', borderBottom: '1px solid #F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div className="section-title">Transaction History</div>
-                        <div className="filter-tabs">
-                            {['All', 'Received', 'Payouts', 'Pending'].map(f => (
-                                <button key={f} className={`filter-tab btn-sm ${activeFilter === f ? 'active' : ''}`} onClick={() => setActiveFilter(f)}>{f}</button>
-                            ))}
-                        </div>
-                    </div>
-                    <table className="data-table">
-                        <thead>
-                            <tr>
-                                <th>Transaction</th>
-                                <th>Patient</th>
-                                <th>Plan</th>
-                                <th>Amount</th>
-                                <th>Date</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filtered.map(t => (
-                                <tr key={t.id}>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <div style={{
-                                                width: 32, height: 32, borderRadius: 10,
-                                                background: t.type === 'credit' ? '#E8F5E2' : '#FFF7ED',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                            }}>
-                                                {t.type === 'credit'
-                                                    ? <ArrowDownLeft size={14} color="#4D7A3E" />
-                                                    : <ArrowUpRight size={14} color="#9A3412" />
-                                                }
-                                            </div>
-                                            <span style={{ fontSize: 12, color: '#9CA3AF', fontWeight: 500 }}>{t.id}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                            <div style={{
-                                                width: 30, height: 30, borderRadius: 8,
-                                                background: t.color, display: 'flex', alignItems: 'center',
-                                                justifyContent: 'center', fontSize: t.id === 'TXN004' ? 14 : 11,
-                                                fontWeight: 700, color: '#374151'
-                                            }}>{t.initials}</div>
-                                            <span style={{ fontSize: 13, fontWeight: 500, color: '#374151' }}>{t.patient}</span>
-                                        </div>
-                                    </td>
-                                    <td><span style={{ fontSize: 12, color: '#9CA3AF' }}>{t.plan}</span></td>
-                                    <td>
-                                        <span style={{ fontSize: 15, fontWeight: 700, color: t.type === 'credit' ? '#4D7A3E' : '#374151' }}>
-                                            {t.type === 'credit' ? '+' : '-'}₹{t.amount.toLocaleString()}
-                                        </span>
-                                    </td>
-                                    <td><span style={{ fontSize: 13, color: '#9CA3AF' }}>{t.date}</span></td>
-                                    <td>
-                                        <span className={`badge ${t.status === 'completed' ? 'badge-green' : t.status === 'processed' ? 'badge-sky' : 'badge-amber'}`}>
-                                            {t.status}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+  return (
+    <div className="animate-fade">
+      <div className="admin-page-header">
+        <div>
+          <div className="page-header-greeting">Billing workspace</div>
+          <h1>Payments</h1>
         </div>
-    )
+
+        <div className="page-header-right">
+          <span className="badge badge-green">Collections healthy</span>
+          <button className="icon-btn">
+            <Bell size={18} />
+          </button>
+          <button className="btn btn-outline">
+            <Download size={16} />
+            Export report
+          </button>
+        </div>
+      </div>
+
+      <div className="page-body admin-page-stack">
+        <section className="admin-hero">
+          <div className="admin-hero-grid">
+            <div>
+              <div className="eyebrow">Revenue workspace</div>
+              <h2 className="hero-heading" style={{ marginTop: '0.55rem' }}>
+                Collections, payouts, and transaction history now sit in the same calmer structure as the member app.
+              </h2>
+              <p className="hero-copy">
+                The page keeps monthly performance, payout timing, and transaction status easy to
+                scan without the older card clutter. You can read the whole payment story in one pass.
+              </p>
+
+              <div className="pill-row">
+                <span className="badge badge-green">86% payout ratio</span>
+                <span className="badge badge-sky">Next settlement on Mar 1</span>
+                <span className="badge badge-amber">1 pending payment</span>
+              </div>
+            </div>
+
+            <div className="focus-card">
+              <div className="dashboard-panel-heading">
+                <div>
+                  <h3>Payout posture</h3>
+                  <p>What is collected, what is cleared, and what is still in motion</p>
+                </div>
+                <Wallet size={18} color="#73955f" />
+              </div>
+
+              <div className="mini-metric-grid">
+                <div className="mini-metric">
+                  <strong>Rs 46,400</strong>
+                  <span>last payout processed</span>
+                </div>
+                <div className="mini-metric">
+                  <strong>Rs 1,208</strong>
+                  <span>average per session</span>
+                </div>
+              </div>
+
+              <div className="admin-note" style={{ marginTop: '1rem' }}>
+                Income is trending upward. The only amount needing attention today is Arjun&apos;s
+                pending plan payment before the next consult cycle begins.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="summary-grid">
+          {statCards.map(({ label, value, foot, tone, accent }) => (
+            <article key={label} className="metric-card">
+              <div className="metric-card-top">
+                <div className="metric-card-icon" style={{ background: tone }}>
+                  <CreditCard size={18} color={accent} />
+                </div>
+                <span style={{ color: accent, fontWeight: 800, fontSize: '0.78rem' }}>Finance</span>
+              </div>
+              <div className="metric-card-value">{value}</div>
+              <div className="metric-card-label">{label}</div>
+              <div className="metric-card-foot" style={{ color: accent }}>{foot}</div>
+            </article>
+          ))}
+        </section>
+
+        <div className="g-2-auto">
+          <section className="support-card">
+            <div className="dashboard-panel-heading">
+              <div>
+                <h3>Revenue vs payouts</h3>
+                <p>Monthly billing inflow compared with settled payouts</p>
+              </div>
+            </div>
+
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={monthlyData} barSize={18} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1ede6" vertical={false} />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca38f' }} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} cursor={false} />
+                <Bar dataKey="income" fill="#73955f" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="payout" fill="#d8ddd2" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </section>
+
+          <div className="admin-side-stack">
+            <section className="payment-card admin-payment-card">
+              <div className="admin-payment-card-top">
+                <div>
+                  <small>Poshan earnings</small>
+                  <strong>{displayName}</strong>
+                </div>
+                <div className="admin-card-chip" />
+              </div>
+
+              <div className="admin-payment-amount">Rs 58,000</div>
+
+              <div className="admin-payment-meta">
+                <div>
+                  <small>This month</small>
+                  <span>February 2026</span>
+                </div>
+                <div>
+                  <small>Next payout</small>
+                  <span>Mar 1, 2026</span>
+                </div>
+              </div>
+            </section>
+
+            <section className="support-card">
+              <div className="dashboard-panel-heading">
+                <div>
+                  <h3>Quick finance notes</h3>
+                  <p>Small details that matter before payout day</p>
+                </div>
+              </div>
+
+              <div className="signal-list">
+                {[
+                  { icon: TrendingUp, label: 'Plan revenue', value: 'Rs 46,500' },
+                  { icon: Clock3, label: 'Pending payout', value: 'Rs 11,600' },
+                  { icon: CreditCard, label: 'Refunds', value: 'Rs 0' },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="signal-item">
+                    <div className="signal-avatar" style={{ background: 'rgba(115, 149, 95, 0.12)' }}>
+                      <Icon size={16} color="#73955f" />
+                    </div>
+                    <div>
+                      <div className="signal-title">{label}</div>
+                      <div className="signal-sub">Current practice value</div>
+                    </div>
+                    <div className="signal-meta">{value}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <section className="support-card admin-surface-card">
+          <div className="admin-toolbar">
+            <div>
+              <h3 style={{ marginBottom: '0.2rem' }}>Transaction history</h3>
+              <p style={{ color: '#8b907f', fontSize: '0.84rem' }}>
+                Filter member payments and payout movements in one place
+              </p>
+            </div>
+
+            <div className="filter-tabs">
+              {['All', 'Received', 'Payouts', 'Pending'].map((filter) => (
+                <button
+                  key={filter}
+                  className={`filter-tab ${activeFilter === filter ? 'active' : ''}`}
+                  onClick={() => setActiveFilter(filter)}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="admin-table-card">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Transaction</th>
+                  <th>Patient</th>
+                  <th>Plan</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTransactions.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td>
+                      <div>
+                        <div className="admin-table-title">{transaction.id}</div>
+                        <div className="admin-table-sub">
+                          {transaction.type === 'credit' ? 'Member payment' : 'Clinic payout'}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="admin-table-person">
+                        <div className="admin-avatar-chip" style={{ background: transaction.color }}>
+                          {transaction.initials}
+                        </div>
+                        <div className="admin-table-title">{transaction.patient}</div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="admin-table-sub">{transaction.plan}</span>
+                    </td>
+                    <td>
+                      <span className="admin-table-title" style={{ color: transaction.type === 'credit' ? '#2f8d58' : '#7f8776' }}>
+                        {transaction.type === 'credit' ? '+' : '-'}Rs {transaction.amount.toLocaleString('en-IN')}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="admin-table-sub">{transaction.date}</span>
+                    </td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          transaction.status === 'completed'
+                            ? 'badge-green'
+                            : transaction.status === 'processed'
+                              ? 'badge-sky'
+                              : 'badge-amber'
+                        }`}
+                      >
+                        {transaction.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  )
 }

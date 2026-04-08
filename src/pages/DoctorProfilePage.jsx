@@ -5,6 +5,7 @@ import {
     MessageCircle, Calendar, Check, Lock, ShieldCheck,
     CreditCard, Smartphone, Building2, ChevronRight, CheckCircle2
 } from 'lucide-react'
+import { saveNutritionistAppointment } from '../lib/adminData'
 
 const doctorData = {
     name: 'Dr. Bipasha',
@@ -41,13 +42,16 @@ const reviews = [
     { name: 'John D.', text: 'Great experience. The meal plans she provided were practical and easy to follow.', rating: 4, date: '2 weeks ago' },
 ]
 
-const upcomingDates = [
-    { label: 'Today', date: 'Feb 28' },
-    { label: 'Tomorrow', date: 'Mar 1' },
-    { label: 'Sat', date: 'Mar 2' },
-    { label: 'Mon', date: 'Mar 4' },
-    { label: 'Tue', date: 'Mar 5' },
-]
+const upcomingDates = Array.from({ length: 5 }, (_, index) => {
+    const date = new Date()
+    date.setDate(date.getDate() + index)
+
+    return {
+        label: index === 0 ? 'Today' : index === 1 ? 'Tomorrow' : new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date),
+        date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date),
+        iso: new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString(),
+    }
+})
 
 const paymentMethods = [
     { id: 'card', label: 'Credit / Debit Card', icon: CreditCard, desc: 'Visa, Mastercard, Rupay' },
@@ -126,7 +130,26 @@ export default function DoctorProfilePage() {
 
     const handlePay = () => {
         setLoading(true)
-        setTimeout(() => { setLoading(false); setStep('success') }, 2000)
+        setTimeout(() => {
+            const selectedDateMeta = upcomingDates[selectedDate]
+            const selectedTimeMeta = timeSlots.find(s => s.id === selectedSlot)
+            const [timeValue, meridiem] = (selectedTimeMeta?.time || '10:00 AM').split(' ')
+            const [hours, minutes] = timeValue.split(':').map(Number)
+            const appointmentDate = new Date(selectedDateMeta?.iso || new Date().toISOString())
+            const normalizedHours = meridiem === 'PM' && hours !== 12 ? hours + 12 : meridiem === 'AM' && hours === 12 ? 0 : hours
+            appointmentDate.setHours(normalizedHours || 10, minutes || 0, 0, 0)
+
+            saveNutritionistAppointment({
+                doctorName: doctorData.name,
+                mode: 'Video consultation',
+                timeLabel: selectedTimeMeta?.time || '10:00 AM',
+                dateLabel: selectedDateMeta?.date || upcomingDates[0].date,
+                scheduledAt: appointmentDate.toISOString(),
+            })
+
+            setLoading(false)
+            setStep('success')
+        }, 2000)
     }
 
     if (step === 'success') return (

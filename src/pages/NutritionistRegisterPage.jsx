@@ -1,218 +1,232 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Mail, Lock, User, AtSign, ArrowRight, Phone, Stethoscope, Award } from 'lucide-react'
-import poshanLogo from '../assets/poshan-logo.svg'
+import {
+  ArrowRight,
+  AtSign,
+  Award,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  Phone,
+  Stethoscope,
+  User,
+} from 'lucide-react'
+import poshanLogoWhite from '../assets/poshan-logo-white.svg'
+import { saveNutritionistSession } from '../lib/session'
 
 const specializations = [
-    'Clinical Nutrition', 'Sports Nutrition', 'Pediatric Nutrition',
-    'Oncology Nutrition', 'Renal Nutrition', 'Bariatric Nutrition',
-    'Diabetes Management', 'Gut Health', 'Weight Management', 'General Dietetics'
+  'Clinical Nutrition',
+  'Sports Nutrition',
+  'Pediatric Nutrition',
+  'Oncology Nutrition',
+  'Renal Nutrition',
+  'Bariatric Nutrition',
+  'Diabetes Management',
+  'Gut Health',
+  'Weight Management',
+  'General Dietetics',
 ]
 
 export default function NutritionistRegisterPage() {
-    const navigate = useNavigate()
-    const [step, setStep] = useState(1)
-    const [showPass, setShowPass] = useState(false)
-    const [form, setForm] = useState({
-        name: '', username: '', email: '', phone: '',
-        specialization: '', experience: '', password: '', confirm: ''
+  const navigate = useNavigate()
+  const [step, setStep] = useState(1)
+  const [showPassword, setShowPassword] = useState(false)
+  const [form, setForm] = useState({
+    name: '',
+    username: '',
+    specialization: '',
+    experience: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirm: '',
+  })
+
+  const setField = (key, value) => setForm((current) => ({ ...current, [key]: value }))
+
+  const handleCreate = (event) => {
+    event.preventDefault()
+
+    saveNutritionistSession({
+      name: form.name,
+      username: form.username || form.name,
+      email: form.email,
+      specialization: form.specialization,
     })
 
-    const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+    navigate('/admin/dashboard')
+  }
 
-    const handleCreate = (e) => {
-        e.preventDefault()
-        localStorage.setItem('poshan_nutri_username', form.username || form.name)
-        localStorage.setItem('poshan_nutri_name', form.name)
-        navigate('/admin/dashboard')
-    }
+  return (
+    <div className="auth-screen">
+      <section className="auth-left-solid">
+        <div className="auth-circle" style={{ width: 760, height: 760, left: '-20%', top: '-10%' }} />
+        <div className="auth-circle" style={{ width: 420, height: 420, right: '-8%', top: '14%' }} />
 
-    return (
-        <div className="auth-screen">
-            {/* Left */}
-            <div className="auth-left animated-bg" style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.12)' }} />
-                {[320, 220, 140].map((s, i) => (
-                    <div key={i} style={{
-                        position: 'absolute', width: s, height: s,
-                        borderRadius: '50%', border: '1px solid rgba(255,255,255,0.08)',
-                        top: `${15 + i * 22}%`, right: `${4 + i * 8}%`, pointerEvents: 'none'
-                    }} />
-                ))}
-                <div className="anim-fade" style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 60px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: 0, marginBottom: 36 }}>
-                        {['🩺', '📋', '🧬', '💊'].map((e, i) => (
-                            <div key={i} style={{
-                                width: 52, height: 52, borderRadius: 16,
-                                background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)',
-                                border: '1px solid rgba(255,255,255,0.15)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-                                marginLeft: i === 0 ? 0 : -8, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                                animation: `float 3s ease-in-out infinite`, animationDelay: `${i * 0.4}s`
-                            }}>
-                                {e}
-                            </div>
-                        ))}
-                    </div>
-                    <h1 style={{ fontSize: 36, fontWeight: 700, color: 'white', letterSpacing: '-1.2px', lineHeight: 1.15, marginBottom: 16 }}>
-                        Join Poshan as a<br />Nutritionist.
-                    </h1>
-                    <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, maxWidth: 320, margin: '0 auto' }}>
-                        Manage patients, appointments and grow your practice on one smart platform.
-                    </p>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 48 }}>
-                        {[1, 2].map(s => (
-                            <div key={s} style={{
-                                height: 4, borderRadius: 4,
-                                width: step === s ? 32 : 16,
-                                background: step >= s ? 'white' : 'rgba(255,255,255,0.25)',
-                                transition: 'all 0.3s'
-                            }} />
-                        ))}
-                    </div>
-                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>Step {step} of 2</p>
-                </div>
+        <div className="anim-fade" style={{ position: 'relative', zIndex: 1, maxWidth: 540 }}>
+          <div className="auth-topline">
+            <div className="auth-mark">
+              <img src={poshanLogoWhite} alt="Poshan" style={{ width: 28, height: 28 }} />
             </div>
-
-            {/* Right */}
-            <div className="auth-right">
-                <div className="anim-fade-up">
-                    <button
-                        onClick={() => step === 1 ? navigate('/choice') : setStep(1)}
-                        style={{ background: 'none', border: 'none', color: '#9CA3AF', fontSize: 13, cursor: 'pointer', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 6, padding: 0 }}
-                    >
-                        ← {step === 1 ? 'Back to choices' : 'Previous step'}
-                    </button>
-
-                    <div style={{ marginBottom: 28 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                            <img src={poshanLogo} alt="Poshan" style={{ width: 38, height: 38 }} />
-                            <span style={{ fontSize: 18, fontWeight: 700, color: '#0D1B0A' }}>Poshan</span>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: '#7FA870', background: '#E8F5E2', padding: '2px 8px', borderRadius: 20, border: '1px solid #C8E8BA' }}>Nutritionist</span>
-                        </div>
-                        <h2 style={{ fontSize: 26, fontWeight: 700, color: '#0D1B0A', letterSpacing: '-0.6px', marginBottom: 4 }}>
-                            {step === 1 ? 'Create your profile' : 'Secure your account'}
-                        </h2>
-                        <p style={{ fontSize: 14, color: '#6B7280' }}>
-                            {step === 1 ? 'Professional details to set up your practice' : 'Choose a strong password to protect your account'}
-                        </p>
-                    </div>
-
-                    {step === 1 ? (
-                        <form onSubmit={e => { e.preventDefault(); setStep(2) }}>
-                            <div className="form-group">
-                                <label className="form-label">Full Name</label>
-                                <div className="form-input-icon-wrap">
-                                    <User size={16} className="form-input-icon" />
-                                    <input className="form-input" placeholder="Dr. Your Name" value={form.name} onChange={e => set('name', e.target.value)} required />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Username <span style={{ color: '#8BAF7C', fontSize: 11 }}>(shown in dashboard)</span></label>
-                                <div className="form-input-icon-wrap">
-                                    <AtSign size={16} className="form-input-icon" />
-                                    <input className="form-input" placeholder="e.g. dr_bipasha" value={form.username} onChange={e => set('username', e.target.value.replace(/\s/g, '').toLowerCase())} required />
-                                </div>
-                                {form.username && (
-                                    <div style={{ fontSize: 11, color: '#8BAF7C', marginTop: 4, marginLeft: 2 }}>
-                                        ✓ Your dashboard will show: <strong>{form.username}</strong>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Specialization</label>
-                                <div className="form-input-icon-wrap">
-                                    <Stethoscope size={16} className="form-input-icon" />
-                                    <select
-                                        className="form-input"
-                                        value={form.specialization}
-                                        onChange={e => set('specialization', e.target.value)}
-                                        required
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <option value="">Select your specialization</option>
-                                        {specializations.map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Years of Experience</label>
-                                <div className="form-input-icon-wrap">
-                                    <Award size={16} className="form-input-icon" />
-                                    <input className="form-input" type="number" min="0" max="50" placeholder="e.g. 8" value={form.experience} onChange={e => set('experience', e.target.value)} />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Email Address</label>
-                                <div className="form-input-icon-wrap">
-                                    <Mail size={16} className="form-input-icon" />
-                                    <input className="form-input" type="email" placeholder="your@clinic.com" value={form.email} onChange={e => set('email', e.target.value)} required />
-                                </div>
-                            </div>
-                            <button type="submit" style={{
-                                width: '100%', padding: '14px', borderRadius: 50,
-                                background: 'linear-gradient(135deg, #7FA870, #4D7A3E)', color: 'white',
-                                border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 600,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                boxShadow: '0 8px 24px rgba(127,168,112,0.35)',
-                                fontFamily: 'Chillax, Plus Jakarta Sans, sans-serif', marginTop: 8
-                            }}>
-                                Continue <ArrowRight size={16} />
-                            </button>
-                        </form>
-                    ) : (
-                        <form onSubmit={handleCreate}>
-                            <div className="form-group">
-                                <label className="form-label">Phone Number</label>
-                                <div className="form-input-icon-wrap">
-                                    <Phone size={16} className="form-input-icon" />
-                                    <input className="form-input" placeholder="+91 ..." value={form.phone} onChange={e => set('phone', e.target.value)} />
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">New Password</label>
-                                <div className="form-input-icon-wrap" style={{ position: 'relative' }}>
-                                    <Lock size={16} className="form-input-icon" />
-                                    <input className="form-input" type={showPass ? 'text' : 'password'} placeholder="Min 8 characters" style={{ paddingRight: 44 }} value={form.password} onChange={e => set('password', e.target.value)} required />
-                                    <button type="button" onClick={() => setShowPass(p => !p)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', display: 'flex' }}>
-                                        {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="form-group">
-                                <label className="form-label">Confirm Password</label>
-                                <div className="form-input-icon-wrap">
-                                    <Lock size={16} className="form-input-icon" />
-                                    <input className="form-input" type="password" placeholder="Re-enter password" value={form.confirm} onChange={e => set('confirm', e.target.value)} required />
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 16, padding: '12px 14px', background: '#F4FAF1', borderRadius: 12, border: '1px solid #C8E8BA' }}>
-                                <div style={{ width: 18, height: 18, borderRadius: 6, background: '#7FA870', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 1, flexShrink: 0 }}>
-                                    <span style={{ color: 'white', fontSize: 10 }}>✓</span>
-                                </div>
-                                <span style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.5 }}>
-                                    I agree to Poshan's <span style={{ color: '#7FA870', fontWeight: 600 }}>Terms of Service</span> and <span style={{ color: '#7FA870', fontWeight: 600 }}>Privacy Policy</span> for healthcare professionals.
-                                </span>
-                            </div>
-                            <button type="submit" style={{
-                                width: '100%', padding: '14px', borderRadius: 50,
-                                background: 'linear-gradient(135deg, #7FA870, #4D7A3E)', color: 'white',
-                                border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 600,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                boxShadow: '0 8px 24px rgba(127,168,112,0.35)',
-                                fontFamily: 'Chillax, Plus Jakarta Sans, sans-serif'
-                            }}>
-                                Create Nutritionist Account 🎉
-                            </button>
-                        </form>
-                    )}
-
-                    <p style={{ textAlign: 'center', marginTop: 24, fontSize: 14, color: '#9CA3AF' }}>
-                        Already have an account?{' '}
-                        <span onClick={() => navigate('/admin/login')} style={{ color: '#7FA870', fontWeight: 700, cursor: 'pointer' }}>Sign in</span>
-                    </p>
-                </div>
+            <div>
+              <div className="brand-name" style={{ fontSize: '1.9rem' }}>Poshan</div>
+              <div className="eyebrow" style={{ marginTop: '0.2rem' }}>Clinical onboarding</div>
             </div>
+          </div>
+
+          <h1 className="auth-heading">Set up a more polished nutrition practice.</h1>
+          <p className="auth-copy">
+            Create your clinical workspace, define your practice identity, and move into a cleaner nutritionist dashboard.
+          </p>
+
+          <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
+            <li><span className="feature-dot">•</span><span>Aligned onboarding with the same auth structure as member accounts.</span></li>
+            <li><span className="feature-dot">•</span><span>Session identity follows the nutritionist account you create.</span></li>
+            <li><span className="feature-dot">•</span><span>Updated clinical surfaces with a calmer Poshan theme.</span></li>
+          </ul>
         </div>
-    )
+      </section>
+
+      <section className="auth-right-panel">
+        <div className="auth-form-card anim-fade-up">
+          <button
+            type="button"
+            className="auth-back-link"
+            onClick={() => (step === 1 ? navigate('/choice') : setStep(1))}
+          >
+            {step === 1 ? 'Back' : 'Back to details'}
+          </button>
+
+          <div className="auth-topline" style={{ marginTop: '1rem' }}>
+            <div className="auth-mark">
+              <img src={poshanLogoWhite} alt="Poshan" style={{ width: 26, height: 26 }} />
+            </div>
+            <div>
+              <div className="eyebrow">Nutritionist account</div>
+              <div className="brand-name" style={{ fontSize: '1.5rem' }}>
+                {step === 1 ? 'Create your practice profile' : 'Secure portal access'}
+              </div>
+            </div>
+          </div>
+
+          <div className="auth-stepper">
+            <span className={step >= 1 ? 'active' : 'idle'} />
+            <span className={step >= 2 ? 'active' : 'idle'} />
+          </div>
+
+          {step === 1 ? (
+            <form onSubmit={(event) => { event.preventDefault(); setStep(2) }}>
+              <div className="form-group">
+                <label className="form-label">Full name</label>
+                <div className="form-input-icon-wrap">
+                  <User size={18} className="form-input-icon" />
+                  <input className="form-input" value={form.name} onChange={(event) => setField('name', event.target.value)} placeholder="Dr. Your Name" required />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Portal username</label>
+                <div className="form-input-icon-wrap">
+                  <AtSign size={18} className="form-input-icon" />
+                  <input className="form-input" value={form.username} onChange={(event) => setField('username', event.target.value.replace(/\s/g, '').toLowerCase())} placeholder="for example dr_bipasha" required />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Specialization</label>
+                <div className="form-input-icon-wrap">
+                  <Stethoscope size={18} className="form-input-icon" />
+                  <select className="form-input" value={form.specialization} onChange={(event) => setField('specialization', event.target.value)} required>
+                    <option value="">Select your specialization</option>
+                    {specializations.map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="g-2" style={{ marginBottom: '1rem' }}>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Experience</label>
+                  <div className="form-input-icon-wrap">
+                    <Award size={18} className="form-input-icon" />
+                    <input className="form-input" type="number" min="0" max="50" value={form.experience} onChange={(event) => setField('experience', event.target.value)} placeholder="Years" />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">Work email</label>
+                  <div className="form-input-icon-wrap">
+                    <Mail size={18} className="form-input-icon" />
+                    <input className="form-input" type="email" value={form.email} onChange={(event) => setField('email', event.target.value)} placeholder="clinic@example.com" required />
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                Continue to access setup
+                <ArrowRight size={16} />
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleCreate}>
+              <div className="form-group">
+                <label className="form-label">Phone number</label>
+                <div className="form-input-icon-wrap">
+                  <Phone size={18} className="form-input-icon" />
+                  <input className="form-input" value={form.phone} onChange={(event) => setField('phone', event.target.value)} placeholder="+91 ..." />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <div className="form-input-icon-wrap">
+                  <Lock size={18} className="form-input-icon" />
+                  <input
+                    className="form-input"
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password}
+                    onChange={(event) => setField('password', event.target.value)}
+                    placeholder="Minimum 8 characters"
+                    style={{ paddingRight: '3rem' }}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#97a08f' }}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '1.3rem' }}>
+                <label className="form-label">Confirm password</label>
+                <div className="form-input-icon-wrap">
+                  <Lock size={18} className="form-input-icon" />
+                  <input className="form-input" type="password" value={form.confirm} onChange={(event) => setField('confirm', event.target.value)} placeholder="Re-enter password" required />
+                </div>
+              </div>
+
+              <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
+                <span className="feature-dot">✓</span>
+                <span>You agree to the clinical usage terms, privacy rules, and professional communication standards.</span>
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                Create nutritionist account
+                <ArrowRight size={16} />
+              </button>
+            </form>
+          )}
+
+          <p className="quiet-note">
+            Already registered? <button type="button" className="link-button" onClick={() => navigate('/admin/login')}>Sign in to the portal</button>
+          </p>
+        </div>
+      </section>
+    </div>
+  )
 }

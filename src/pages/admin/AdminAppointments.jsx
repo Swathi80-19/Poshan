@@ -1,214 +1,265 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, ChevronRight, Plus, Clock, CheckCircle2, XCircle, Bell, Video, User } from 'lucide-react'
+import {
+  Bell,
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Plus,
+  Video,
+} from 'lucide-react'
 
 const hours = ['9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM']
 
 const appointments = [
-    { id: 1, time: '9:00 AM', name: 'Rekha Sharma', type: 'Follow-up', duration: 45, col: 1, row: 0, status: 'done', initials: 'RS', color: '#E8F5E2' },
-    { id: 2, time: '11:30 AM', name: 'Krishna Murthy', type: 'Diet Review', duration: 60, col: 1, row: 2.5, status: 'done', initials: 'KM', color: '#DBEAFE' },
-    { id: 3, time: '2:00 PM', name: 'Priya Verma', type: 'Initial Consult', duration: 60, col: 1, row: 5.5, status: 'upcoming', initials: 'PV', color: '#EDE9FE' },
-    { id: 4, time: '4:30 PM', name: 'Arjun Reddy', type: 'Follow-up', duration: 30, col: 1, row: 7.5, status: 'upcoming', initials: 'AR', color: '#FEF9C3' },
+  { id: 1, time: '9:00 AM', name: 'Rekha Sharma', type: 'Follow-up', duration: 45, row: 0, status: 'done', initials: 'RS', color: '#f8eccc' },
+  { id: 2, time: '11:30 AM', name: 'Krishna Murthy', type: 'Diet review', duration: 60, row: 2.5, status: 'done', initials: 'KM', color: '#e8f0fb' },
+  { id: 3, time: '2:00 PM', name: 'Priya Verma', type: 'Initial consult', duration: 60, row: 5.5, status: 'upcoming', initials: 'PV', color: '#eee6fa' },
+  { id: 4, time: '4:30 PM', name: 'Arjun Reddy', type: 'Follow-up', duration: 30, row: 7.5, status: 'upcoming', initials: 'AR', color: '#fde8e2' },
 ]
 
 const upcomingList = [
-    { name: 'Priya Verma', time: 'Today, 2:00 PM', type: 'Initial Consult', initials: 'PV', color: '#EDE9FE', video: true },
-    { name: 'Arjun Reddy', time: 'Today, 4:30 PM', type: 'Follow-up', initials: 'AR', color: '#FEF9C3', video: false },
-    { name: 'Sunita Patel', time: 'Tomorrow, 10:00 AM', type: 'Diet Review', initials: 'SP', color: '#ECFDF5', video: true },
-    { name: 'Rahul Singh', time: 'Tomorrow, 3:00 PM', type: 'Progress Check', initials: 'RS', color: '#FFF7ED', video: false },
+  { name: 'Priya Verma', time: 'Today, 2:00 PM', type: 'Initial consult', initials: 'PV', color: '#eee6fa', video: true },
+  { name: 'Arjun Reddy', time: 'Today, 4:30 PM', type: 'Follow-up', initials: 'AR', color: '#f8eccc', video: false },
+  { name: 'Sunita Patel', time: 'Tomorrow, 10:00 AM', type: 'Diet review', initials: 'SP', color: '#e7efe0', video: true },
+  { name: 'Rahul Singh', time: 'Tomorrow, 3:00 PM', type: 'Progress check', initials: 'RS', color: '#fff2df', video: false },
 ]
 
 const weekDays = [
-    { d: 'Mon', n: 24, appts: 4 },
-    { d: 'Tue', n: 25, appts: 2 },
-    { d: 'Wed', n: 26, appts: 5 },
-    { d: 'Thu', n: 27, appts: 3 },
-    { d: 'Fri', n: 28, appts: 4 },
-    { d: 'Sat', n: 29, appts: 1 },
+  { day: 'Mon', date: 24, appointments: 4 },
+  { day: 'Tue', date: 25, appointments: 2 },
+  { day: 'Wed', date: 26, appointments: 5 },
+  { day: 'Thu', date: 27, appointments: 3 },
+  { day: 'Fri', date: 28, appointments: 4 },
+  { day: 'Sat', date: 29, appointments: 1 },
+]
+
+const statCards = [
+  { label: 'Scheduled', value: '4', foot: 'Sessions on today board', tone: '#e7efe0', accent: '#73955f' },
+  { label: 'Completed', value: '2', foot: 'Morning reviews already closed', tone: '#e8f0fb', accent: '#4d82b7' },
+  { label: 'Upcoming', value: '2', foot: 'Afternoon consult block', tone: '#eee6fa', accent: '#7a61b8' },
+  { label: 'Video calls', value: '2', foot: 'Remote check-ins still pending', tone: '#f8eccc', accent: '#c9953b' },
 ]
 
 export default function AdminAppointments() {
-    const [activeDay, setActiveDay] = useState(4)
-    const navigate = useNavigate()
+  const [activeDay, setActiveDay] = useState(4)
 
-    return (
-        <div className="anim-fade">
-            <div className="admin-page-header">
-                <div>
-                    <div style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 2 }}>Manage your schedule</div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: '#0D1B0A' }}>Appointments</div>
-                </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                    <button className="icon-btn"><Bell size={17} /></button>
-                    <button style={{
-                        padding: '9px 18px', borderRadius: 50,
-                        background: 'linear-gradient(135deg, #7FA870, #4D7A3E)',
-                        color: 'white', border: 'none', cursor: 'pointer',
-                        fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6,
-                        fontFamily: 'Chillax, Plus Jakarta Sans, sans-serif',
-                        boxShadow: '0 4px 16px rgba(127,168,112,0.30)'
-                    }}>
-                        <Plus size={14} /> New Appointment
-                    </button>
-                </div>
-            </div>
-
-            <div className="page-body">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
-                    {/* Calendar timeline */}
-                    <div className="card" style={{ overflow: 'hidden' }}>
-                        {/* Week selector */}
-                        <div style={{ padding: '18px 22px', borderBottom: '1px solid #F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                <button className="week-nav-btn"><ChevronLeft size={14} /></button>
-                                <span style={{ fontWeight: 700, color: '#111827', fontSize: 15 }}>Feb 2026</span>
-                                <button className="week-nav-btn"><ChevronRight size={14} /></button>
-                            </div>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                                {['Day', 'Week', 'Month'].map(v => (
-                                    <button key={v} style={{
-                                        padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 500,
-                                        background: v === 'Day' ? '#F4FAF1' : 'transparent',
-                                        border: v === 'Day' ? '1px solid #C8E8BA' : '1px solid transparent',
-                                        color: v === 'Day' ? '#4D7A3E' : '#9CA3AF', cursor: 'pointer',
-                                        fontFamily: 'Chillax, Plus Jakarta Sans, sans-serif'
-                                    }}>{v}</button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Day tabs */}
-                        <div style={{ padding: '14px 22px', borderBottom: '1px solid #F3F4F6', display: 'flex', gap: 8 }}>
-                            {weekDays.map(({ d, n, appts }, i) => (
-                                <div
-                                    key={n}
-                                    onClick={() => setActiveDay(i)}
-                                    style={{
-                                        flex: 1, textAlign: 'center', padding: '10px 6px',
-                                        borderRadius: 14, cursor: 'pointer',
-                                        background: activeDay === i ? 'linear-gradient(135deg, #7FA870, #4D7A3E)' : 'transparent',
-                                        transition: 'all 0.2s',
-                                        border: activeDay === i ? 'none' : '1px solid #F3F4F6'
-                                    }}
-                                >
-                                    <div style={{ fontSize: 10, fontWeight: 600, color: activeDay === i ? 'rgba(255,255,255,0.7)' : '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{d}</div>
-                                    <div style={{ fontSize: 18, fontWeight: 700, color: activeDay === i ? 'white' : '#111827', margin: '4px 0' }}>{n}</div>
-                                    {appts > 0 && (
-                                        <div style={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                                            {Array.from({ length: Math.min(appts, 3) }).map((_, j) => (
-                                                <div key={j} style={{ width: 4, height: 4, borderRadius: '50%', background: activeDay === i ? 'rgba(255,255,255,0.6)' : '#7FA870' }} />
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Time grid */}
-                        <div style={{ padding: '16px 22px', maxHeight: 460, overflowY: 'auto' }}>
-                            <div style={{ position: 'relative' }}>
-                                {hours.map((h, i) => (
-                                    <div key={h} style={{ display: 'flex', gap: 14, marginBottom: 0 }}>
-                                        <div style={{ width: 52, flexShrink: 0, fontSize: 11, color: '#9CA3AF', fontWeight: 500, paddingTop: 2, textAlign: 'right' }}>{h}</div>
-                                        <div style={{ flex: 1, height: 56, borderTop: '1px solid #F8F9FA', position: 'relative' }}>
-                                            {appointments.filter(a => Math.floor(a.row) === i).map(appt => (
-                                                <div key={appt.id} style={{
-                                                    position: 'absolute', left: 0, right: 0,
-                                                    top: `${(appt.row % 1) * 56}px`,
-                                                    height: `${(appt.duration / 60) * 56}px`,
-                                                    background: appt.status === 'done' ? '#F9FAFB' : appt.color,
-                                                    border: `1.5px solid ${appt.status === 'done' ? '#E5E7EB' : '#C8E8BA'}`,
-                                                    borderRadius: 10, padding: '8px 12px',
-                                                    display: 'flex', alignItems: 'center', gap: 8,
-                                                    cursor: 'pointer', zIndex: 1,
-                                                    boxShadow: appt.status === 'upcoming' ? '0 4px 12px rgba(127,168,112,0.15)' : 'none'
-                                                }}>
-                                                    <div style={{
-                                                        width: 28, height: 28, borderRadius: 8,
-                                                        background: 'white', display: 'flex', alignItems: 'center',
-                                                        justifyContent: 'center', fontWeight: 700, fontSize: 11, color: '#374151',
-                                                        flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.08)'
-                                                    }}>{appt.initials}</div>
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{ fontSize: 12, fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{appt.name}</div>
-                                                        <div style={{ fontSize: 10, color: '#9CA3AF' }}>{appt.type} · {appt.duration}min</div>
-                                                    </div>
-                                                    {appt.status === 'done'
-                                                        ? <CheckCircle2 size={14} color="#22C55E" />
-                                                        : <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#7FA870', flexShrink: 0 }} />
-                                                    }
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Upcoming list */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                        {/* Stats */}
-                        <div className="card" style={{ padding: 22 }}>
-                            <div className="section-title" style={{ marginBottom: 14 }}>Today's Stats</div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                                {[
-                                    { label: 'Scheduled', val: 4, color: '#E8F5E2', tc: '#4D7A3E' },
-                                    { label: 'Completed', val: 2, color: '#ECFDF5', tc: '#065F46' },
-                                    { label: 'Upcoming', val: 2, color: '#DBEAFE', tc: '#1D4ED8' },
-                                    { label: 'Cancelled', val: 0, color: '#FEF9C3', tc: '#92400E' },
-                                ].map(({ label, val, color, tc }) => (
-                                    <div key={label} style={{
-                                        background: color, borderRadius: 12, padding: '12px 14px', textAlign: 'center'
-                                    }}>
-                                        <div style={{ fontSize: 24, fontWeight: 800, color: tc }}>{val}</div>
-                                        <div style={{ fontSize: 11, color: tc + 'AA', fontWeight: 500 }}>{label}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Upcoming */}
-                        <div className="card" style={{ padding: 22, flex: 1 }}>
-                            <div className="section-title" style={{ marginBottom: 16 }}>Upcoming Sessions</div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                {upcomingList.map(appt => (
-                                    <div key={appt.name} style={{
-                                        padding: '13px 14px', borderRadius: 14,
-                                        background: '#F9FAFB', border: '1px solid #F3F4F6',
-                                        display: 'flex', alignItems: 'center', gap: 10,
-                                        cursor: 'pointer', transition: 'all 0.2s'
-                                    }}
-                                        onMouseEnter={e => e.currentTarget.style.background = '#F4FAF1'}
-                                        onMouseLeave={e => e.currentTarget.style.background = '#F9FAFB'}
-                                    >
-                                        <div style={{
-                                            width: 40, height: 40, borderRadius: 12,
-                                            background: appt.color, display: 'flex', alignItems: 'center',
-                                            justifyContent: 'center', fontWeight: 700, color: '#374151', fontSize: 13, flexShrink: 0
-                                        }}>{appt.initials}</div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{appt.name}</div>
-                                            <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{appt.type}</div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3, fontSize: 11, color: '#6B7280' }}>
-                                                <Clock size={10} /> {appt.time}
-                                            </div>
-                                        </div>
-                                        {appt.video && (
-                                            <div style={{
-                                                width: 30, height: 30, borderRadius: 8,
-                                                background: '#E8F5E2', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                            }}>
-                                                <Video size={13} color="#4D7A3E" />
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+  return (
+    <div className="animate-fade">
+      <div className="admin-page-header">
+        <div>
+          <div className="page-header-greeting">Schedule control</div>
+          <h1>Appointments</h1>
         </div>
-    )
+
+        <div className="page-header-right">
+          <span className="badge badge-green">4 sessions today</span>
+          <button className="icon-btn">
+            <Bell size={18} />
+          </button>
+          <button className="btn btn-primary">
+            <Plus size={16} />
+            New appointment
+          </button>
+        </div>
+      </div>
+
+      <div className="page-body admin-page-stack">
+        <section className="admin-hero">
+          <div className="admin-hero-grid">
+            <div>
+              <div className="eyebrow">Session board</div>
+              <h2 className="hero-heading" style={{ marginTop: '0.55rem' }}>
+                The clinic schedule now follows the same visual rhythm as the member tracker pages.
+              </h2>
+              <p className="hero-copy">
+                Your week strip, time grid, and next-session stack are grouped into a calmer flow,
+                so you can see what is completed, what is next, and where a consult needs context.
+              </p>
+
+              <div className="pill-row">
+                <span className="badge badge-green">Morning block completed</span>
+                <span className="badge badge-amber">2 reviews left</span>
+                <span className="badge badge-sky">2 remote sessions</span>
+              </div>
+            </div>
+
+            <div className="focus-card">
+              <div className="dashboard-panel-heading">
+                <div>
+                  <h3>Today&apos;s pace</h3>
+                  <p>Time already cleared and what still needs energy</p>
+                </div>
+                <Clock3 size={18} color="#73955f" />
+              </div>
+
+              <div className="mini-metric-grid">
+                <div className="mini-metric">
+                  <strong>2h 45m</strong>
+                  <span>care time completed</span>
+                </div>
+                <div className="mini-metric">
+                  <strong>1</strong>
+                  <span>session needing prep notes</span>
+                </div>
+              </div>
+
+              <div className="admin-note" style={{ marginTop: '1rem' }}>
+                Priya&apos;s intake consult is the most important remaining session. Open her notes
+                before 2 PM and keep the 4:30 follow-up lighter.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="summary-grid">
+          {statCards.map(({ label, value, foot, tone, accent }) => (
+            <article key={label} className="metric-card">
+              <div className="metric-card-top">
+                <div className="metric-card-icon" style={{ background: tone }}>
+                  <CalendarDays size={18} color={accent} />
+                </div>
+                <span style={{ color: accent, fontWeight: 800, fontSize: '0.78rem' }}>Today</span>
+              </div>
+              <div className="metric-card-value">{value}</div>
+              <div className="metric-card-label">{label}</div>
+              <div className="metric-card-foot" style={{ color: accent }}>{foot}</div>
+            </article>
+          ))}
+        </section>
+
+        <div className="g-2-auto">
+          <section className="support-card admin-schedule-shell">
+            <div className="admin-schedule-top">
+              <div className="admin-schedule-month">
+                <button className="week-nav-btn">
+                  <ChevronLeft size={14} />
+                </button>
+                <span>February 2026</span>
+                <button className="week-nav-btn">
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+
+              <div className="filter-tabs">
+                {['Day', 'Week', 'Month'].map((view) => (
+                  <button
+                    key={view}
+                    className={`filter-tab ${view === 'Day' ? 'active' : ''}`}
+                  >
+                    {view}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="admin-week-strip">
+              {weekDays.map((item, index) => (
+                <button
+                  key={`${item.day}-${item.date}`}
+                  className={`admin-week-day ${activeDay === index ? 'active' : ''}`}
+                  onClick={() => setActiveDay(index)}
+                >
+                  <span>{item.day}</span>
+                  <strong>{item.date}</strong>
+                  <small>{item.appointments} booked</small>
+                </button>
+              ))}
+            </div>
+
+            <div className="admin-time-grid">
+              {hours.map((hour, index) => (
+                <div key={hour} className="admin-time-row">
+                  <div className="admin-time-label">{hour}</div>
+                  <div className="admin-time-track">
+                    {appointments
+                      .filter((appointment) => Math.floor(appointment.row) === index)
+                      .map((appointment) => (
+                        <button
+                          key={appointment.id}
+                          className={`admin-session-block ${appointment.status}`}
+                          style={{
+                            top: `${(appointment.row % 1) * 68}px`,
+                            height: `${(appointment.duration / 60) * 68}px`,
+                            background: appointment.status === 'done' ? 'rgba(255, 252, 247, 0.92)' : appointment.color,
+                          }}
+                        >
+                          <div className="admin-session-avatar">{appointment.initials}</div>
+                          <div className="admin-session-copy">
+                            <strong>{appointment.name}</strong>
+                            <span>{appointment.type}</span>
+                            <small>{appointment.time} / {appointment.duration} min</small>
+                          </div>
+                          {appointment.status === 'done'
+                            ? <CheckCircle2 size={14} color="#2f8d58" />
+                            : <div className="admin-session-dot" />
+                          }
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <div className="admin-side-stack">
+            <section className="support-card">
+              <div className="dashboard-panel-heading">
+                <div>
+                  <h3>Session stats</h3>
+                  <p>Quick scan before the next consult begins</p>
+                </div>
+              </div>
+
+              <div className="admin-session-stat-grid">
+                {[
+                  { label: 'Scheduled', value: '4' },
+                  { label: 'Completed', value: '2' },
+                  { label: 'Upcoming', value: '2' },
+                  { label: 'Cancelled', value: '0' },
+                ].map((item) => (
+                  <div key={item.label} className="mini-metric">
+                    <strong>{item.value}</strong>
+                    <span>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="support-card">
+              <div className="dashboard-panel-heading">
+                <div>
+                  <h3>Upcoming sessions</h3>
+                  <p>Keep the next consults and remote calls visible</p>
+                </div>
+              </div>
+
+              <div className="signal-list">
+                {upcomingList.map((appointment) => (
+                  <div key={`${appointment.name}-${appointment.time}`} className="signal-item">
+                    <div className="signal-avatar" style={{ background: appointment.color }}>
+                      {appointment.initials}
+                    </div>
+                    <div>
+                      <div className="signal-title">{appointment.name}</div>
+                      <div className="signal-sub">{appointment.type}</div>
+                      <div className="queue-sub">{appointment.time}</div>
+                    </div>
+                    {appointment.video ? (
+                      <div className="admin-video-pill">
+                        <Video size={14} />
+                      </div>
+                    ) : (
+                      <div className="signal-meta">In clinic</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }

@@ -1,231 +1,122 @@
-import { useNavigate } from 'react-router-dom'
-import { User, Stethoscope, ArrowRight } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { ArrowRight, ShieldCheck, UserRound } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import poshanLogoWhite from '../assets/poshan-logo-white.svg'
 
+const choiceOrbs = [
+  { size: '12rem', top: '6%', left: '8%', duration: '16s', delay: '0s', driftX: '2vw', driftY: '-3vh' },
+  { size: '18rem', top: '12%', left: '76%', duration: '22s', delay: '-4s', driftX: '-3vw', driftY: '4vh' },
+  { size: '8rem', top: '54%', left: '20%', duration: '18s', delay: '-7s', driftX: '3vw', driftY: '3vh' },
+  { size: '14rem', top: '68%', left: '70%', duration: '20s', delay: '-10s', driftX: '-2vw', driftY: '-4vh' },
+]
+
 const choices = [
-    {
-        type: 'user',
-        icon: User,
-        emoji: '🥗',
-        title: 'I\'m a User',
-        subtitle: 'Track nutrition, book dietitian consultations, and achieve your health goals.',
-        features: ['Meal Tracking', 'Expert Consultations', 'Health Statistics', 'Progress Charts'],
-        loginPath: '/login',
-        registerPath: '/register',
-        gradient: 'linear-gradient(145deg, #E8F5E2, #C8E8BA)',
-        iconColor: '#4D7A3E',
-        accent: '#7FA870',
-        cta: 'Continue as User',
-    },
-    {
-        type: 'nutritionist',
-        icon: Stethoscope,
-        emoji: '🩺',
-        title: 'I\'m a Nutritionist',
-        subtitle: 'Manage patients, schedules, appointments, payments, and grow your practice.',
-        features: ['Patient Management', 'Appointment Calendar', 'Payment Tracking', 'Detailed Reports'],
-        loginPath: '/admin/login',
-        registerPath: '/nutritionist/register',
-        gradient: 'linear-gradient(145deg, #0D1B0A, #1E3A18)',
-        iconColor: '#9BBF8A',
-        accent: '#7FA870',
-        cta: 'Continue as Nutritionist',
-        dark: true,
-    },
+  {
+    title: 'Member login',
+    icon: <UserRound size={20} />,
+    action: '/login',
+    description: 'Track meals, appointments, and progress in your personal wellness workspace.',
+    eyebrow: 'For patients',
+  },
+  {
+    title: 'Nutritionist login',
+    icon: <ShieldCheck size={20} />,
+    action: '/admin/login',
+    description: 'Manage patients, sessions, reports, and day-to-day practice decisions.',
+    eyebrow: 'For professionals',
+  },
 ]
 
 export default function ChoicePage() {
-    const navigate = useNavigate()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [isDrawingEntry, setIsDrawingEntry] = useState(Boolean(location.state?.drawnEntry))
 
-    return (
-        <div style={{
-            minHeight: '100vh',
-            background: 'linear-gradient(145deg, #F4FAF1 0%, #E8F5E2 50%, #D0E8C4 100%)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '40px 24px',
-            position: 'relative',
-            overflow: 'hidden',
-        }}>
-            {/* Background decoration */}
-            <div style={{
-                position: 'absolute', top: -100, right: -100,
-                width: 400, height: 400, borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(127,168,112,0.12) 0%, transparent 70%)',
-                pointerEvents: 'none'
-            }} />
-            <div style={{
-                position: 'absolute', bottom: -80, left: -80,
-                width: 300, height: 300, borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(77,122,62,0.10) 0%, transparent 70%)',
-                pointerEvents: 'none'
-            }} />
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
 
-            {/* Logo */}
-            <div className="anim-fade-up" style={{ textAlign: 'center', marginBottom: 48 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 12 }}>
-                    <div style={{
-                        width: 48, height: 48, borderRadius: 16,
-                        background: 'linear-gradient(135deg, #7FA870, #4D7A3E)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 8px 24px rgba(127,168,112,0.35)',
-                    }}>
-                        <img src={poshanLogoWhite} alt="Poshan" style={{ width: 34, height: 34 }} />
-                    </div>
-                    <span style={{ fontSize: 30, fontWeight: 700, color: '#1a2e14', letterSpacing: '-1px' }}>Poshan</span>
-                </div>
-                <h1 style={{ fontSize: 32, fontWeight: 700, color: '#0D1B0A', letterSpacing: '-0.8px', marginBottom: 8 }}>
-                    Welcome! Who are you?
-                </h1>
-                <p style={{ fontSize: 16, color: '#6B7280', fontWeight: 400 }}>
-                    Choose your experience to get started
-                </p>
+  useEffect(() => {
+    if (!isDrawingEntry) {
+      return undefined
+    }
+
+    const timer = window.setTimeout(() => {
+      setIsDrawingEntry(false)
+    }, 1200)
+
+    return () => window.clearTimeout(timer)
+  }, [isDrawingEntry])
+
+  return (
+    <div className={`choice-scene ${isDrawingEntry ? 'choice-scene-drawing' : 'choice-scene-ready'}`}>
+      <div className="choice-scene-orbs" aria-hidden="true">
+        {choiceOrbs.map((orb, index) => (
+          <span
+            key={`${orb.top}-${orb.left}`}
+            className="choice-scene-orb"
+            style={{
+              '--orb-size': orb.size,
+              '--orb-top': orb.top,
+              '--orb-left': orb.left,
+              '--orb-duration': orb.duration,
+              '--orb-delay': orb.delay,
+              '--orb-drift-x': orb.driftX,
+              '--orb-drift-y': orb.driftY,
+              '--orb-hue': index % 2 === 0 ? 'rgba(115, 149, 95, 0.18)' : 'rgba(201, 149, 59, 0.2)',
+            }}
+          />
+        ))}
+      </div>
+      <div className="choice-scene-grid" />
+
+      <div className={`choice-stage-shell ${isDrawingEntry ? 'choice-stage-shell-drawing' : 'choice-stage-shell-ready'}`}>
+        <section className="choice-stage">
+          <div className="choice-stage-copy">
+            <div className="brand-lockup">
+              <div className="brand-chip">
+                <img src={poshanLogoWhite} alt="Poshan" style={{ width: 30, height: 30 }} />
+              </div>
+              <div>
+                <div className="brand-name">Poshan</div>
+                <div className="eyebrow" style={{ marginTop: '0.2rem' }}>Portal opened</div>
+              </div>
             </div>
 
-            {/* Choice cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, maxWidth: 900, width: '100%' }}>
-                {choices.map((c, idx) => (
-                    <div
-                        key={c.type}
-                        className="anim-fade-up"
-                        style={{
-                            animationDelay: `${idx * 0.12}s`,
-                            background: c.dark ? '#0D1B0A' : 'white',
-                            borderRadius: 28,
-                            padding: 36,
-                            border: c.dark ? '1px solid rgba(127,168,112,0.2)' : '1px solid #E5EDE1',
-                            boxShadow: c.dark
-                                ? '0 24px 64px rgba(0,0,0,0.25)'
-                                : '0 12px 40px rgba(127,168,112,0.12)',
-                            display: 'flex', flexDirection: 'column', gap: 0,
-                            cursor: 'pointer',
-                            transition: 'all 0.3s cubic-bezier(0.34,1.56,0.64,1)',
-                            position: 'relative', overflow: 'hidden',
-                        }}
-                        onMouseEnter={e => {
-                            e.currentTarget.style.transform = 'translateY(-6px)'
-                            e.currentTarget.style.boxShadow = c.dark
-                                ? '0 32px 80px rgba(0,0,0,0.35)'
-                                : '0 20px 56px rgba(127,168,112,0.20)'
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.transform = 'translateY(0)'
-                            e.currentTarget.style.boxShadow = c.dark
-                                ? '0 24px 64px rgba(0,0,0,0.25)'
-                                : '0 12px 40px rgba(127,168,112,0.12)'
-                        }}
-                    >
-                        {/* Decorative blur circle */}
-                        <div style={{
-                            position: 'absolute', top: -40, right: -40,
-                            width: 160, height: 160, borderRadius: '50%',
-                            background: `radial-gradient(circle, ${c.accent}20 0%, transparent 70%)`,
-                            pointerEvents: 'none'
-                        }} />
-
-                        {/* Emoji badge */}
-                        <div style={{
-                            width: 72, height: 72, borderRadius: 20,
-                            background: c.dark ? 'rgba(127,168,112,0.12)' : '#E8F5E2',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 36, marginBottom: 24,
-                            border: c.dark ? '1px solid rgba(127,168,112,0.2)' : '1px solid #C8E8BA',
-                        }}>
-                            {c.emoji}
-                        </div>
-
-                        <h2 style={{ fontSize: 24, fontWeight: 700, color: c.dark ? 'white' : '#0D1B0A', marginBottom: 10, letterSpacing: '-0.4px' }}>
-                            {c.title}
-                        </h2>
-                        <p style={{ fontSize: 14, color: c.dark ? 'rgba(255,255,255,0.55)' : '#6B7280', lineHeight: 1.6, marginBottom: 24 }}>
-                            {c.subtitle}
-                        </p>
-
-                        {/* Features */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 28 }}>
-                            {c.features.map(f => (
-                                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                    <div style={{
-                                        width: 20, height: 20, borderRadius: 6,
-                                        background: c.dark ? 'rgba(127,168,112,0.2)' : '#E8F5E2',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        flexShrink: 0,
-                                        border: c.dark ? '1px solid rgba(127,168,112,0.25)' : '1px solid #C8E8BA'
-                                    }}>
-                                        <span style={{ fontSize: 10, color: c.accent }}>✓</span>
-                                    </div>
-                                    <span style={{ fontSize: 13, color: c.dark ? 'rgba(255,255,255,0.6)' : '#374151', fontWeight: 500 }}>{f}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* CTA buttons */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 'auto' }}>
-                            <button
-                                style={{
-                                    padding: '13px 20px',
-                                    borderRadius: 50,
-                                    background: c.dark
-                                        ? 'linear-gradient(135deg, #7FA870, #4D7A3E)'
-                                        : 'linear-gradient(135deg, #7FA870, #4D7A3E)',
-                                    color: 'white', border: 'none', cursor: 'pointer',
-                                    fontSize: 15, fontWeight: 600,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                    boxShadow: '0 8px 24px rgba(127,168,112,0.35)',
-                                    transition: 'all 0.25s',
-                                    fontFamily: 'Chillax, Plus Jakarta Sans, sans-serif',
-                                }}
-                                onClick={() => navigate(c.loginPath)}
-                                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
-                                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                            >
-                                {c.cta}
-                                <ArrowRight size={16} />
-                            </button>
-                            {c.type === 'user' && (
-                                <button
-                                    style={{
-                                        padding: '11px 20px', borderRadius: 50,
-                                        background: 'transparent', color: c.iconColor,
-                                        border: `1.5px solid ${c.accent}40`, cursor: 'pointer',
-                                        fontSize: 13, fontWeight: 500,
-                                        fontFamily: 'Chillax, Plus Jakarta Sans, sans-serif',
-                                        transition: 'all 0.2s'
-                                    }}
-                                    onClick={() => navigate(c.registerPath)}
-                                    onMouseEnter={e => { e.currentTarget.style.background = '#E8F5E2' }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                                >
-                                    Create new account
-                                </button>
-                            )}
-                            {c.type === 'nutritionist' && (
-                                <button
-                                    style={{
-                                        padding: '11px 20px', borderRadius: 50,
-                                        background: 'transparent', color: 'rgba(255,255,255,0.7)',
-                                        border: `1.5px solid rgba(127,168,112,0.35)`, cursor: 'pointer',
-                                        fontSize: 13, fontWeight: 500,
-                                        fontFamily: 'Chillax, Plus Jakarta Sans, sans-serif',
-                                        transition: 'all 0.2s'
-                                    }}
-                                    onClick={() => navigate(c.registerPath)}
-                                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(127,168,112,0.15)' }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                                >
-                                    Create nutritionist account
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <p style={{ marginTop: 32, fontSize: 12, color: '#9CA3AF', textAlign: 'center' }}>
-                © 2025 Poshan · Your health, our mission
+            <div className="story-section-tag">Choose your entrance</div>
+            <h1 className="choice-stage-title">Select the login that matches the person using Poshan.</h1>
+            <p className="choice-stage-text">
+              The page opens cleanly, then keeps the next choice simple and clear.
             </p>
-        </div>
-    )
+          </div>
+
+          <div className="choice-stage-grid">
+            {choices.map((choice) => (
+              <button
+                key={choice.title}
+                type="button"
+                className="choice-stage-card"
+                onClick={() => navigate(choice.action)}
+              >
+                <div className="choice-stage-card-top">
+                  <div className="choice-stage-icon">{choice.icon}</div>
+                  <span className="choice-stage-tag">{choice.eyebrow}</span>
+                </div>
+
+                <div className="choice-stage-card-body">
+                  <strong>{choice.title}</strong>
+                  <p>{choice.description}</p>
+                </div>
+
+                <div className="choice-stage-card-foot">
+                  Continue
+                  <ArrowRight size={16} />
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
+  )
 }

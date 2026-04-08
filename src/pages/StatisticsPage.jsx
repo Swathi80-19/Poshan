@@ -1,389 +1,403 @@
-import { useState } from 'react'
-import { Bell, TrendingUp, TrendingDown, Award } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Bell, Droplets, MoonStar, Sparkles, TrendingDown, TrendingUp, Utensils } from 'lucide-react'
 import {
-    BarChart, Bar, XAxis, YAxis, Tooltip,
-    ResponsiveContainer, LineChart, Line, AreaChart, Area,
-    RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-    PieChart, Pie, Cell, RadialBarChart, RadialBar,
-    ComposedChart, ReferenceLine, Legend, CartesianGrid
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ComposedChart,
+  Legend,
+  Line,
+  Pie,
+  PieChart,
+  PolarAngleAxis,
+  PolarGrid,
+  Radar,
+  RadarChart,
+  RadialBar,
+  RadialBarChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts'
+import { useTracking } from '../context/TrackingContext'
+import {
+  getMacroTotals,
+  getWeightTrend,
+  round,
+} from '../lib/tracking'
 
-// ─── Data ──────────────────────────────────────────────────────────────────────
-const weekData = [
-    { day: 'Mon', kcal: 1320, goal: 1500, deficit: 180 },
-    { day: 'Tue', kcal: 900, goal: 1500, deficit: 600 },
-    { day: 'Wed', kcal: 1100, goal: 1500, deficit: 400 },
-    { day: 'Thu', kcal: 1400, goal: 1500, deficit: 100 },
-    { day: 'Fri', kcal: 1200, goal: 1500, deficit: 300 },
-    { day: 'Sat', kcal: 1600, goal: 1500, deficit: -100 },
-    { day: 'Sun', kcal: 1300, goal: 1500, deficit: 200 },
-]
-
-const weightData = [
-    { week: 'W1', kg: 55 }, { week: 'W2', kg: 54.5 },
-    { week: 'W3', kg: 54.1 }, { week: 'W4', kg: 53.8 },
-    { week: 'W5', kg: 53.2 }, { week: 'W6', kg: 53 },
-]
-
-const macrosPie = [
-    { name: 'Protein', value: 85, color: '#8BAF7C' },
-    { name: 'Carbs', value: 180, color: '#3B82F6' },
-    { name: 'Fats', value: 45, color: '#F97316' },
-    { name: 'Fiber', value: 22, color: '#8B5CF6' },
-]
-
-const exerciseData = [
-    { day: 'Mon', min: 30 }, { day: 'Tue', min: 45 }, { day: 'Wed', min: 20 },
-    { day: 'Thu', min: 60 }, { day: 'Fri', min: 45 }, { day: 'Sat', min: 0 }, { day: 'Sun', min: 30 },
-]
-
-const sleepData = [
-    { day: 'Mon', hours: 7.5, quality: 80 },
-    { day: 'Tue', hours: 6.5, quality: 60 },
-    { day: 'Wed', hours: 8, quality: 90 },
-    { day: 'Thu', hours: 7, quality: 70 },
-    { day: 'Fri', hours: 6, quality: 55 },
-    { day: 'Sat', hours: 9, quality: 95 },
-    { day: 'Sun', hours: 7.5, quality: 80 },
-]
-
-const waterData = [
-    { day: 'Mon', actual: 1800, goal: 2000 },
-    { day: 'Tue', actual: 1200, goal: 2000 },
-    { day: 'Wed', actual: 2000, goal: 2000 },
-    { day: 'Thu', actual: 1600, goal: 2000 },
-    { day: 'Fri', actual: 1400, goal: 2000 },
-    { day: 'Sat', actual: 2000, goal: 2000 },
-    { day: 'Sun', actual: 1000, goal: 2000 },
-]
-
-const radialData = [
-    { name: 'Protein', value: 71, fill: '#8BAF7C' },
-    { name: 'Carbs', value: 72, fill: '#3B82F6' },
-    { name: 'Fats', value: 69, fill: '#F97316' },
-    { name: 'Fiber', value: 73, fill: '#8B5CF6' },
-    { name: 'Calcium', value: 62, fill: '#EF4444' },
-    { name: 'Iron', value: 44, fill: '#7C3AED' },
-]
-
-const achievements = [
-    { icon: '🔥', label: '6-Day Streak', sub: 'Keep going!', color: '#FEF3C7' },
-    { icon: '💧', label: 'Hydration Pro', sub: '7 days ≥ 2L water', color: '#DBEAFE' },
-    { icon: '⚖️', label: '-2kg Goal', sub: 'Target achieved', color: '#E8F1E4' },
-    { icon: '💪', label: 'Protein Champ', sub: '5-day protein streak', color: '#EDE9FE' },
-]
-
-const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload?.length) return (
-        <div style={{ background: '#1F2937', color: 'white', padding: '8px 12px', borderRadius: 10, fontSize: 12 }}>
-            <div style={{ fontWeight: 600, marginBottom: 2 }}>{label}</div>
-            {payload.map(p => (
-                <div key={p.dataKey}>
-                    <span style={{ color: p.color || '#9CA3AF' }}>{p.name || p.dataKey}: </span>
-                    <span style={{ fontWeight: 700 }}>{p.value}{p.dataKey === 'kcal' || p.dataKey === 'goal' ? ' kcal' : p.dataKey === 'deficit' ? ' kcal cut' : p.dataKey === 'kg' ? ' kg' : p.dataKey === 'min' ? ' min' : p.dataKey === 'hours' ? 'h' : p.dataKey === 'actual' || p.dataKey === 'goal' ? ' ml' : ''}</span>
-                </div>
-            ))}
-        </div>
-    )
-    return null
+const PALETTE = {
+  primary: '#73955f',
+  primarySoft: '#d2e0c8',
+  deep: '#465c39',
+  gold: '#c9953b',
+  goldSoft: '#f8eccc',
+  mist: '#cdd7d0',
+  clay: '#d4a47d',
+  claySoft: '#f3e4d8',
+  ink: '#1f241d',
+  muted: '#7f8776',
+  line: 'rgba(92, 120, 74, 0.1)',
+  panel: 'rgba(255, 252, 247, 0.82)',
 }
 
-const Highlight = ({ children, color = '#8BAF7C' }) => (
-    <span style={{
-        background: color + '18',
-        color: color,
-        fontWeight: 800,
-        padding: '1px 6px',
-        borderRadius: 6,
-        fontSize: 'inherit',
-    }}>{children}</span>
-)
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+
+  return (
+    <div
+      style={{
+        background: PALETTE.panel,
+        border: `1px solid ${PALETTE.line}`,
+        borderRadius: 16,
+        padding: '10px 12px',
+        boxShadow: '0 16px 32px rgba(57, 44, 23, 0.08)',
+      }}
+    >
+      <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.14em', color: PALETTE.muted, marginBottom: 6 }}>
+        {label}
+      </div>
+      {payload.map((item) => (
+        <div key={`${item.dataKey}-${item.value}`} style={{ display: 'flex', gap: 8, fontSize: 12, marginTop: 2 }}>
+          <span style={{ color: item.color || PALETTE.deep, fontWeight: 700 }}>
+            {item.name || item.dataKey}
+          </span>
+          <span style={{ color: PALETTE.ink }}>{item.value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ChartFrame({ title, subtitle, children, action }) {
+  return (
+    <div className="card" style={{ padding: 24 }}>
+      <div className="dashboard-panel-heading">
+        <div>
+          <h3 style={{ fontSize: '1.35rem' }}>{title}</h3>
+          <p>{subtitle}</p>
+        </div>
+        {action}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function scoreFromRatio(value, goal) {
+  if (!goal) return 100
+  return Math.min(round((value / goal) * 100), 100)
+}
 
 export default function StatisticsPage() {
-    const [period, setPeriod] = useState('Week')
-    const username = localStorage.getItem('poshan_username') || localStorage.getItem('poshan_name') || 'Krishna'
-    const initial = username.charAt(0).toUpperCase()
+  const [period, setPeriod] = useState('7 days')
+  const username = localStorage.getItem('poshan_username') || localStorage.getItem('poshan_name') || 'Krishna'
+  const initial = username.charAt(0).toUpperCase()
+  const { profile, dailyData, foodEntries, summary, latestDay } = useTracking()
 
-    return (
-        <div className="animate-fade">
-            <div className="page-header">
-                <div className="page-header-left">
-                    <span className="page-header-greeting">Track your progress</span>
-                    <span className="page-header-title">Statistics</span>
-                </div>
-                <div className="page-header-right">
-                    <div style={{ display: 'flex', background: '#F3F4F6', borderRadius: 20, padding: 3 }}>
-                        {['Day', 'Week', 'Month'].map(p => (
-                            <button key={p} onClick={() => setPeriod(p)} className="btn" style={{
-                                padding: '6px 16px', fontSize: 12, borderRadius: 17,
-                                background: period === p ? 'white' : 'transparent',
-                                color: period === p ? '#111827' : '#6B7280',
-                                boxShadow: period === p ? '0 1px 4px rgba(0,0,0,0.1)' : 'none',
-                                fontWeight: period === p ? 600 : 400
-                            }}>{p}</button>
-                        ))}
-                    </div>
-                    <button className="header-icon-btn"><Bell size={18} /></button>
-                    <div className="header-avatar" style={{ background: 'linear-gradient(135deg, #7FA870, #4D7A3E)', color: 'white' }}>{initial}</div>
-                </div>
-            </div>
+  const periodDays = useMemo(() => {
+    if (period === 'Today') {
+      return dailyData.filter((day) => day.day === latestDay)
+    }
 
-            <div className="page-body">
-                {/* KPI Strip */}
-                <div className="g-4">
-                    {[
-                        { icon: '🔥', label: 'Avg Calories', val: <Highlight color="#F97316">1,239</Highlight>, sub: 'kcal/day', color: '#FFF0E6' },
-                        { icon: '⚖️', label: 'Current Weight', val: <Highlight color="#8BAF7C">53 kg</Highlight>, sub: '-2kg this month', color: '#E8F1E4' },
-                        { icon: '📊', label: 'BMI', val: <Highlight color="#3B82F6">20.8</Highlight>, sub: 'Normal range', color: '#DBEAFE' },
-                        { icon: '🏃', label: 'Active Days', val: <Highlight color="#8B5CF6">6/7</Highlight>, sub: 'This week', color: '#EDE9FE' },
-                    ].map(({ icon, label, val, sub, color }) => (
-                        <div key={label} style={{ background: color, borderRadius: 18, padding: '18px 20px' }}>
-                            <span style={{ fontSize: 24 }}>{icon}</span>
-                            <div style={{ fontSize: 22, fontWeight: 800, color: '#111827', margin: '8px 0 2px' }}>{val}</div>
-                            <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{label}</div>
-                            <div style={{ fontSize: 11, fontWeight: 600, color: '#6B7280' }}>{sub}</div>
-                        </div>
-                    ))}
-                </div>
+    return dailyData
+  }, [dailyData, latestDay, period])
 
-                {/* ── Row 1: Calorie Cut Chart (NEW) + Weight Trend ── */}
-                <div className="g-2">
+  const selectedDayLabels = periodDays.map((day) => day.day)
+  const selectedFoodEntries = foodEntries.filter((entry) => selectedDayLabels.includes(entry.day))
+  const selectedMacros = getMacroTotals(selectedFoodEntries)
+  const averageCalories = round(periodDays.reduce((sum, day) => sum + day.calories, 0) / Math.max(periodDays.length, 1))
+  const currentWeight = [...periodDays].reverse().find((day) => day.weight !== null)?.weight ?? summary.latestWeight
+  const consistencyScore = round(periodDays.reduce((sum, day) => sum + day.adherence, 0) / Math.max(periodDays.length, 1))
+  const activeDayCount = periodDays.filter((day) => day.activeMinutes > 0 || day.steps > 0).length
+  const weightChange = round((getWeightTrend(dailyData)[0]?.kg ?? currentWeight) - currentWeight, 1)
+  const calorieDelta = round(periodDays.reduce((sum, day) => sum + day.deficit, 0) / Math.max(periodDays.length, 1))
 
-                    {/* Calorie Cut / Deficit Chart */}
-                    <div className="card" style={{ padding: 24 }}>
-                        <div style={{ marginBottom: 16 }}>
-                            <div style={{ fontSize: 13, color: '#9CA3AF' }}>Calorie Cut Tracker</div>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                <span style={{ fontSize: 30, fontWeight: 800, color: '#111827' }}>1,680</span>
-                                <span style={{ fontSize: 14, color: '#9CA3AF' }}>kcal cut this week</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#22C55E', fontSize: 12, fontWeight: 600, marginTop: 4 }}>
-                                <TrendingDown size={13} /> Weekly deficit on track
-                            </div>
-                        </div>
-                        <ResponsiveContainer width="100%" height={170}>
-                            <ComposedChart data={weekData}>
-                                <defs>
-                                    <linearGradient id="cutGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#22C55E" stopOpacity={0.25} />
-                                        <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-                                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} />
-                                <YAxis hide />
-                                <Tooltip content={<CustomTooltip />} cursor={false} />
-                                <ReferenceLine y={0} stroke="#E5E7EB" strokeDasharray="4 4" />
-                                <Bar dataKey="deficit" name="Deficit" radius={[6, 6, 0, 0]} fill="#22C55E" fillOpacity={0.8} />
-                                <Line type="monotone" dataKey="kcal" name="Actual" stroke="#F97316" strokeWidth={2.5} dot={{ fill: '#F97316', r: 3 }} />
-                            </ComposedChart>
-                        </ResponsiveContainer>
-                        <div style={{ display: 'flex', gap: 16, marginTop: 8, justifyContent: 'center' }}>
-                            {[['#22C55E', 'Calorie Cut'], ['#F97316', 'Actual Intake']].map(([c, l]) => (
-                                <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#6B7280' }}>
-                                    <div style={{ width: 10, height: 10, borderRadius: 2, background: c }} />{l}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+  const weekData = dailyData.map((day) => ({
+    day: day.day,
+    kcal: day.calories,
+    goal: profile.calorieGoal,
+    deficit: day.deficit,
+  }))
 
-                    {/* Weight Trend — Area */}
-                    <div className="card" style={{ padding: 24 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                            <div>
-                                <div style={{ fontSize: 13, color: '#9CA3AF' }}>Weight Trend</div>
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                    <span style={{ fontSize: 30, fontWeight: 800, color: '#111827' }}>53</span>
-                                    <span style={{ fontSize: 14, color: '#9CA3AF' }}>kg</span>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#22C55E', fontSize: 13, fontWeight: 600, background: '#F0FDF4', padding: '6px 12px', borderRadius: 20 }}>
-                                <TrendingDown size={14} /> <Highlight color="#22C55E">-2kg</Highlight> this month
-                            </div>
-                        </div>
-                        <ResponsiveContainer width="100%" height={170}>
-                            <AreaChart data={weightData}>
-                                <defs>
-                                    <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#8BAF7C" stopOpacity={0.25} />
-                                        <stop offset="95%" stopColor="#8BAF7C" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} />
-                                <YAxis hide domain={[51, 56]} />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Area type="monotone" dataKey="kg" name="Weight" stroke="#8BAF7C" strokeWidth={3}
-                                    fill="url(#weightGrad)"
-                                    dot={{ fill: '#8BAF7C', r: 5, strokeWidth: 0 }}
-                                    activeDot={{ r: 7, fill: '#5A8A4A', stroke: 'white', strokeWidth: 2 }} />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+  const weightData = getWeightTrend(dailyData)
 
-                {/* ── Row 2: Macro Pie + Nutrient Radial ── */}
-                <div className="g-2">
+  const macrosPie = [
+    { name: 'Protein', value: selectedMacros.protein || 0, color: PALETTE.primary },
+    { name: 'Carbs', value: selectedMacros.carbs || 0, color: PALETTE.mist },
+    { name: 'Fats', value: selectedMacros.fats || 0, color: PALETTE.gold },
+    { name: 'Fiber', value: selectedMacros.fiber || 0, color: PALETTE.clay },
+  ]
 
-                    {/* Macros Pie Chart */}
-                    <div className="card" style={{ padding: 24 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                            <div>
-                                <div style={{ fontSize: 13, color: '#9CA3AF' }}>Macronutrients</div>
-                                <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>Today's Split</div>
-                            </div>
-                            <span style={{ fontSize: 12, color: '#8BAF7C', fontWeight: 600 }}>Today</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                            <ResponsiveContainer width={160} height={160}>
-                                <PieChart>
-                                    <Pie data={macrosPie} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value">
-                                        {macrosPie.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                                    </Pie>
-                                    <Tooltip formatter={(val, name) => [`${val}g`, name]} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                {macrosPie.map(({ name, value, color }) => (
-                                    <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                                        <span style={{ fontSize: 13, fontWeight: 600, color: '#374151', flex: 1 }}>{name}</span>
-                                        <span style={{ fontSize: 14, fontWeight: 800, color }}>{value}g</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+  const exerciseData = dailyData.map((day) => ({ day: day.day, min: day.activeMinutes }))
+  const sleepData = dailyData.map((day) => ({ day: day.day, hours: day.sleepHours, quality: day.sleepQuality }))
+  const waterData = dailyData.map((day) => ({ day: day.day, actual: day.water, goal: profile.waterGoal }))
 
-                    {/* Nutrient Radial Progress */}
-                    <div className="card" style={{ padding: 24 }}>
-                        <div style={{ marginBottom: 14 }}>
-                            <div style={{ fontSize: 13, color: '#9CA3AF' }}>Nutrient Goals</div>
-                            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>% of Daily Target</div>
-                        </div>
-                        <ResponsiveContainer width="100%" height={180}>
-                            <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="100%" data={radialData} startAngle={180} endAngle={-180}>
-                                <RadialBar dataKey="value" cornerRadius={4} background={{ fill: '#F3F4F6' }} label={false} />
-                                <Tooltip formatter={(val, name) => [`${val}%`, name]} />
-                                <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-                            </RadialBarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
+  const daysInScope = Math.max(periodDays.length, 1)
+  const radialData = [
+    { name: 'Protein', value: scoreFromRatio(selectedMacros.protein, profile.proteinGoal * daysInScope), fill: PALETTE.primary },
+    { name: 'Carbs', value: scoreFromRatio(selectedMacros.carbs, profile.carbsGoal * daysInScope), fill: PALETTE.mist },
+    { name: 'Fats', value: scoreFromRatio(selectedMacros.fats, profile.fatsGoal * daysInScope), fill: PALETTE.gold },
+    { name: 'Fiber', value: scoreFromRatio(selectedMacros.fiber, profile.fiberGoal * daysInScope), fill: PALETTE.clay },
+    { name: 'Water', value: scoreFromRatio(periodDays.reduce((sum, day) => sum + day.water, 0), profile.waterGoal * daysInScope), fill: '#8aa7c6' },
+    { name: 'Movement', value: scoreFromRatio(periodDays.reduce((sum, day) => sum + day.activeMinutes, 0), profile.activeMinutesGoal * daysInScope), fill: '#8d7f64' },
+  ]
 
-                {/* ── Row 3: Exercise Horizontal Bar + Sleep Stacked ── */}
-                <div className="g-2">
+  const consistencyData = [
+    { metric: 'Meals', score: round(periodDays.reduce((sum, day) => sum + Math.min((day.meals / 3) * 100, 100), 0) / daysInScope) },
+    { metric: 'Hydration', score: round(periodDays.reduce((sum, day) => sum + scoreFromRatio(day.water, profile.waterGoal), 0) / daysInScope) },
+    { metric: 'Sleep', score: round(periodDays.reduce((sum, day) => sum + scoreFromRatio(day.sleepHours, profile.sleepGoal), 0) / daysInScope) },
+    { metric: 'Movement', score: round(periodDays.reduce((sum, day) => sum + scoreFromRatio(day.activeMinutes, profile.activeMinutesGoal), 0) / daysInScope) },
+    { metric: 'Protein', score: round(periodDays.reduce((sum, day) => sum + scoreFromRatio(day.protein, profile.proteinGoal), 0) / daysInScope) },
+  ]
 
-                    {/* Exercise — Horizontal Bar Chart */}
-                    <div className="card" style={{ padding: 24 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                            <div>
-                                <div style={{ fontSize: 13, color: '#9CA3AF' }}>Exercise Minutes</div>
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                                    <span style={{ fontSize: 30, fontWeight: 800, color: '#111827' }}>230</span>
-                                    <span style={{ fontSize: 14, color: '#9CA3AF' }}>min/week</span>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#8BAF7C', fontSize: 13, fontWeight: 600 }}>
-                                <TrendingUp size={14} /> +20% vs last
-                            </div>
-                        </div>
-                        <ResponsiveContainer width="100%" height={170}>
-                            <BarChart data={exerciseData} layout="vertical" barSize={14}>
-                                <XAxis type="number" hide />
-                                <YAxis type="category" dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9CA3AF' }} width={30} />
-                                <Tooltip content={<CustomTooltip />} cursor={false} />
-                                <Bar dataKey="min" name="Minutes" radius={[0, 6, 6, 0]}>
-                                    {exerciseData.map((entry, i) => (
-                                        <Cell key={i} fill={entry.min === 0 ? '#F3F4F6' : entry.min >= 45 ? '#4D7A3E' : '#8BAF7C'} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
+  const achievements = [
+    { icon: Sparkles, label: `${consistencyScore}% consistency`, sub: 'Average adherence score in the selected view', color: PALETTE.goldSoft, accent: PALETTE.gold },
+    { icon: Droplets, label: `${round(summary.averageHydration / 1000, 1)}L hydration avg`, sub: 'Tracker entries are feeding the water chart', color: '#eef3ef', accent: PALETTE.primary },
+    { icon: TrendingDown, label: `${currentWeight} kg latest weight`, sub: `${weightChange >= 0 ? '-' : '+'}${Math.abs(weightChange)} kg change from earliest log`, color: PALETTE.claySoft, accent: PALETTE.clay },
+    { icon: MoonStar, label: `${summary.averageSleep}h sleep avg`, sub: 'Recovery data now updates the performance layer', color: '#f1ede6', accent: PALETTE.deep },
+  ]
 
-                    {/* Sleep + Water Stacked Chart */}
-                    <div className="card" style={{ padding: 24 }}>
-                        <div style={{ marginBottom: 16 }}>
-                            <div style={{ fontSize: 13, color: '#9CA3AF' }}>Sleep & Hydration</div>
-                            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>Weekly Pattern</div>
-                        </div>
-                        <ResponsiveContainer width="100%" height={170}>
-                            <ComposedChart data={sleepData}>
-                                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9CA3AF' }} />
-                                <YAxis hide />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Bar dataKey="hours" name="Sleep(h)" fill="#7C3AED" fillOpacity={0.75} radius={[4, 4, 0, 0]} barSize={18} />
-                                <Line type="monotone" dataKey="quality" name="Quality%" stroke="#3B82F6" strokeWidth={2} dot={{ fill: '#3B82F6', r: 3 }} />
-                            </ComposedChart>
-                        </ResponsiveContainer>
-                        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 8 }}>
-                            {[['#7C3AED', 'Sleep Hours'], ['#3B82F6', 'Quality %']].map(([c, l]) => (
-                                <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#6B7280' }}>
-                                    <div style={{ width: 10, height: 10, borderRadius: 2, background: c }} />{l}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+  const segmentedWrap = {
+    display: 'flex',
+    padding: 4,
+    borderRadius: 999,
+    background: 'rgba(255,252,247,0.95)',
+    border: `1px solid ${PALETTE.line}`,
+  }
 
-                {/* ── Row 4: Water Intake (Stacked) + Health Metrics ── */}
-                <div className="g-2">
-
-                    {/* Water Stacked Bar */}
-                    <div className="card" style={{ padding: 24 }}>
-                        <div style={{ marginBottom: 16 }}>
-                            <div style={{ fontSize: 13, color: '#9CA3AF' }}>Water Intake vs Goal</div>
-                            <div style={{ fontSize: 20, fontWeight: 800, color: '#111827' }}>Daily Hydration (ml)</div>
-                        </div>
-                        <ResponsiveContainer width="100%" height={170}>
-                            <BarChart data={waterData} barSize={20}>
-                                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9CA3AF' }} />
-                                <YAxis hide />
-                                <Tooltip content={<CustomTooltip />} cursor={false} />
-                                <Bar dataKey="actual" name="Actual" stackId="a" fill="#3B82F6" fillOpacity={0.85} radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="goal" name="Goal" stackId="b" fill="#BFDBFE" fillOpacity={0.5} radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-
-                    {/* Health Metrics */}
-                    <div className="card" style={{ padding: 24 }}>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: '#111827', marginBottom: 18 }}>Health Metrics</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                            {[
-                                { icon: '🏃', label: 'Exercise', val: '45 min', sub: 'Today', color: '#E8F1E4', hc: '#4D7A3E' },
-                                { icon: '❤️', label: 'BPM', val: '86', sub: 'Resting HR', color: '#FEE2E2', hc: '#DC2626' },
-                                { icon: '💧', label: 'Water', val: '1,000 ml', sub: 'of 2L goal', color: '#DBEAFE', hc: '#3B82F6' },
-                                { icon: '😴', label: 'Sleep', val: '7.5 hrs', sub: 'Last night', color: '#EDE9FE', hc: '#7C3AED' },
-                            ].map(({ icon, label, val, sub, color, hc }) => (
-                                <div key={label} style={{ background: color, borderRadius: 14, padding: 16 }}>
-                                    <div style={{ fontSize: 22 }}>{icon}</div>
-                                    <div style={{ fontSize: 18, fontWeight: 800, color: '#111827', marginTop: 6 }}>{val}</div>
-                                    <div style={{ fontSize: 10, color: '#6B7280' }}>{sub}</div>
-                                    <div style={{ fontSize: 10, color: hc, fontWeight: 700, marginTop: 2 }}>{label}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* ── Row 5: Achievements ── */}
-                <div className="card" style={{ padding: 24 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-                        <Award size={16} color="#F59E0B" />
-                        <span style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Achievements</span>
-                    </div>
-                    <div className="g-4">
-                        {achievements.map(({ icon, label, sub, color }) => (
-                            <div key={label} style={{ background: color, borderRadius: 16, padding: '16px', textAlign: 'center' }}>
-                                <div style={{ fontSize: 32, marginBottom: 8 }}>{icon}</div>
-                                <div style={{ fontSize: 13, fontWeight: 700, color: '#111827' }}>{label}</div>
-                                <div style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{sub}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
+  return (
+    <div className="animate-fade">
+      <div className="page-header">
+        <div className="page-header-left">
+          <span className="page-header-greeting">Performance review</span>
+          <span className="page-header-title">Statistics</span>
         </div>
-    )
+        <div className="page-header-right">
+          <div style={segmentedWrap}>
+            {['Today', '7 days'].map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setPeriod(item)}
+                style={{
+                  minWidth: 74,
+                  padding: '8px 14px',
+                  borderRadius: 999,
+                  background: period === item ? `linear-gradient(135deg, ${PALETTE.primary}, ${PALETTE.deep})` : 'transparent',
+                  color: period === item ? 'white' : PALETTE.muted,
+                  fontWeight: 700,
+                }}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <button className="header-icon-btn"><Bell size={18} /></button>
+          <div className="header-avatar">{initial}</div>
+        </div>
+      </div>
+
+      <div className="page-body">
+        <div className="summary-grid">
+          {[
+            { label: 'Average intake', value: `${averageCalories}`, suffix: 'kcal/day', accent: PALETTE.gold, tone: PALETTE.goldSoft },
+            { label: 'Current weight', value: `${currentWeight}`, suffix: 'kg', accent: PALETTE.primary, tone: '#eef3ef' },
+            { label: 'Consistency', value: `${consistencyScore}`, suffix: 'score', accent: PALETTE.deep, tone: '#f1ede6' },
+            { label: 'Active days', value: `${activeDayCount}/${daysInScope}`, suffix: 'tracked', accent: PALETTE.clay, tone: PALETTE.claySoft },
+          ].map((item) => (
+            <div key={item.label} className="metric-card">
+              <div className="metric-card-top">
+                <span className="eyebrow" style={{ letterSpacing: '0.12em' }}>{item.label}</span>
+                <span style={{ color: item.accent, fontWeight: 800 }}>Live</span>
+              </div>
+              <div className="metric-card-value" style={{ color: item.accent }}>{item.value}</div>
+              <div className="metric-card-label">{item.suffix}</div>
+              <div style={{ marginTop: 14, height: 8, borderRadius: 999, background: item.tone }} />
+            </div>
+          ))}
+        </div>
+
+        <div className="g-2">
+          <ChartFrame
+            title="Calorie deficit"
+            subtitle="Goal versus actual intake rebuilt from your logged meals"
+            action={<span className="badge badge-green">{calorieDelta >= 0 ? `${calorieDelta} kcal under target` : `${Math.abs(calorieDelta)} kcal over target`}</span>}
+          >
+            <ResponsiveContainer width="100%" height={250}>
+              <ComposedChart data={weekData}>
+                <defs>
+                  <linearGradient id="deficitFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={PALETTE.primary} stopOpacity={0.18} />
+                    <stop offset="95%" stopColor={PALETTE.primary} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke={PALETTE.line} vertical={false} />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: PALETTE.muted, fontSize: 11 }} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} cursor={false} />
+                <ReferenceLine y={0} stroke={PALETTE.line} strokeDasharray="4 4" />
+                <Bar dataKey="deficit" name="Deficit" radius={[8, 8, 0, 0]} fill={PALETTE.primarySoft} />
+                <Line type="monotone" dataKey="kcal" name="Actual intake" stroke={PALETTE.deep} strokeWidth={2.5} dot={{ fill: PALETTE.deep, r: 3 }} />
+                <Area type="monotone" dataKey="goal" name="Goal" stroke={PALETTE.gold} strokeWidth={2} fill="url(#deficitFill)" fillOpacity={0.3} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartFrame>
+
+          <ChartFrame
+            title="Weight trend"
+            subtitle="Weight entries now come from tracker check-ins"
+            action={
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: PALETTE.primary, fontWeight: 700 }}>
+                <TrendingDown size={14} /> {weightChange >= 0 ? `-${weightChange}` : `+${Math.abs(weightChange)}`}kg
+              </span>
+            }
+          >
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={weightData}>
+                <defs>
+                  <linearGradient id="weightFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={PALETTE.gold} stopOpacity={0.24} />
+                    <stop offset="95%" stopColor={PALETTE.gold} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke={PALETTE.line} vertical={false} />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: PALETTE.muted, fontSize: 11 }} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} />
+                <Area type="monotone" dataKey="kg" name="Weight" stroke={PALETTE.gold} strokeWidth={3} fill="url(#weightFill)" dot={{ fill: PALETTE.gold, r: 4 }} connectNulls />
+              </AreaChart>
+            </ResponsiveContainer>
+          </ChartFrame>
+        </div>
+
+        <div className="g-2">
+          <ChartFrame title="Macro split" subtitle="Selected nutrition period shown as a live macro distribution">
+            <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 18, alignItems: 'center' }}>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={macrosPie} innerRadius={54} outerRadius={82} paddingAngle={3} dataKey="value">
+                    {macrosPie.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="timeline-list">
+                {macrosPie.map((entry) => (
+                  <div key={entry.name} className="signal-item" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
+                    <div style={{ width: 12, height: 12, borderRadius: 999, background: entry.color }} />
+                    <div className="signal-title">{entry.name}</div>
+                    <div className="signal-meta" style={{ color: entry.color, fontWeight: 800 }}>{entry.value}g</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </ChartFrame>
+
+          <ChartFrame title="Daily target coverage" subtitle="Food and activity goals rolled into one view">
+            <ResponsiveContainer width="100%" height={250}>
+              <RadialBarChart data={radialData} innerRadius="18%" outerRadius="92%" startAngle={180} endAngle={0}>
+                <RadialBar dataKey="value" background={{ fill: '#efe7da' }} cornerRadius={8} />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
+                <Tooltip content={<CustomTooltip />} />
+              </RadialBarChart>
+            </ResponsiveContainer>
+          </ChartFrame>
+        </div>
+
+        <div className="g-2">
+          <ChartFrame
+            title="Exercise cadence"
+            subtitle="Movement minutes now follow your activity check-ins"
+            action={<span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: PALETTE.gold, fontWeight: 700 }}><TrendingUp size={14} /> {summary.activeDays}/7 active days</span>}
+          >
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={exerciseData} barSize={26}>
+                <CartesianGrid stroke={PALETTE.line} vertical={false} />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: PALETTE.muted, fontSize: 11 }} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} cursor={false} />
+                <Bar dataKey="min" name="Minutes" radius={[10, 10, 0, 0]}>
+                  {exerciseData.map((entry) => (
+                    <Cell key={entry.day} fill={entry.min === 0 ? '#e9e2d6' : entry.min >= profile.activeMinutesGoal ? PALETTE.primary : PALETTE.gold} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartFrame>
+
+          <ChartFrame title="Recovery pattern" subtitle="Sleep hours and quality based on tracker recovery logs">
+            <ResponsiveContainer width="100%" height={240}>
+              <ComposedChart data={sleepData}>
+                <CartesianGrid stroke={PALETTE.line} vertical={false} />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: PALETTE.muted, fontSize: 11 }} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="hours" name="Sleep hours" fill={PALETTE.mist} radius={[10, 10, 0, 0]} />
+                <Line type="monotone" dataKey="quality" name="Quality %" stroke={PALETTE.deep} strokeWidth={2.5} dot={{ fill: PALETTE.deep, r: 3 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartFrame>
+        </div>
+
+        <div className="g-2">
+          <ChartFrame title="Hydration versus goal" subtitle="Actual water intake plotted against your saved target">
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={waterData} barSize={24}>
+                <CartesianGrid stroke={PALETTE.line} vertical={false} />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: PALETTE.muted, fontSize: 11 }} />
+                <YAxis hide />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="goal" name="Goal" fill="#e9e2d6" radius={[10, 10, 0, 0]} />
+                <Bar dataKey="actual" name="Actual" fill={PALETTE.primary} radius={[10, 10, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartFrame>
+
+          <ChartFrame title="Habit consistency" subtitle="Broader behavior quality across meals, hydration, sleep, and movement">
+            <ResponsiveContainer width="100%" height={240}>
+              <RadarChart data={consistencyData}>
+                <PolarGrid stroke={PALETTE.line} />
+                <PolarAngleAxis dataKey="metric" tick={{ fill: PALETTE.muted, fontSize: 11 }} />
+                <Radar dataKey="score" stroke={PALETTE.deep} fill={PALETTE.primarySoft} fillOpacity={0.5} />
+                <Tooltip content={<CustomTooltip />} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </ChartFrame>
+        </div>
+
+        <div className="card" style={{ padding: 24 }}>
+          <div className="dashboard-panel-heading">
+            <div>
+              <h3 style={{ fontSize: '1.35rem' }}>Tracker highlights</h3>
+              <p>Signals created directly from your new meal and activity inputs</p>
+            </div>
+            <Utensils size={18} color={PALETTE.gold} />
+          </div>
+          <div className="g-4" style={{ marginBottom: 0 }}>
+            {achievements.map((item) => {
+              const Icon = item.icon
+
+              return (
+                <div key={item.label} className="metric-card" style={{ background: item.color }}>
+                  <div className="metric-card-icon" style={{ background: 'rgba(255,255,255,0.55)' }}>
+                    <Icon size={18} color={item.accent} />
+                  </div>
+                  <div style={{ fontWeight: 800, marginTop: 10 }}>{item.label}</div>
+                  <div className="metric-card-label" style={{ marginTop: 6 }}>{item.sub}</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
