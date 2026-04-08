@@ -23,7 +23,7 @@ export default function UserLoginPage() {
 
     try {
       const session = await loginMember({
-        email: form.identifier.trim(),
+        email: form.identifier.trim().toLowerCase(),
         password: form.password,
       })
 

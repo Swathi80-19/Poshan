@@ -115,11 +115,19 @@ function mapActivityEntry(entry) {
   }
 }
 
-function toRemoteState(profile, foodEntries, activityEntries) {
+function toMergedRemoteState(localState, results) {
+  const [profileResult, foodResult, activityResult] = results
+
   return {
-    profile: mapProfileResponse(profile),
-    foodEntries: Array.isArray(foodEntries) ? foodEntries.map(mapFoodEntry) : [],
-    activityEntries: Array.isArray(activityEntries) ? activityEntries.map(mapActivityEntry) : [],
+    profile: profileResult.status === 'fulfilled'
+      ? mapProfileResponse(profileResult.value)
+      : localState.profile,
+    foodEntries: foodResult.status === 'fulfilled'
+      ? (Array.isArray(foodResult.value) ? foodResult.value.map(mapFoodEntry) : [])
+      : localState.foodEntries,
+    activityEntries: activityResult.status === 'fulfilled'
+      ? (Array.isArray(activityResult.value) ? activityResult.value.map(mapActivityEntry) : [])
+      : localState.activityEntries,
   }
 }
 
@@ -176,14 +184,19 @@ export function TrackingProvider({ children }) {
 
     ;(async () => {
       try {
-        const [profile, foodEntries, activityEntries] = await Promise.all([
+        const results = await Promise.allSettled([
           getMemberProfile(session.accessToken),
           getFoodLogs(session.accessToken),
           getActivityLogs(session.accessToken),
         ])
 
-        const remoteState = toRemoteState(profile, foodEntries, activityEntries)
-        const shouldUseRemote = hasMeaningfulTrackingState(remoteState) || !hasMeaningfulTrackingState(localState)
+        const hasSuccessfulFetch = results.some((result) => result.status === 'fulfilled')
+        const remoteState = hasSuccessfulFetch
+          ? toMergedRemoteState(localState, results)
+          : localState
+        const shouldUseRemote = hasSuccessfulFetch && (
+          hasMeaningfulTrackingState(remoteState) || !hasMeaningfulTrackingState(localState)
+        )
 
         if (!cancelled && shouldUseRemote) {
           setTrackingState(remoteState)

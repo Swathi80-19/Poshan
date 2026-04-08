@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 
 async function parseResponse(response) {
   if (response.status === 204) {
@@ -42,19 +42,54 @@ function toErrorMessage(payload, fallback) {
   return fallback
 }
 
+function isLikelyDevProxyFailure(response, payload) {
+  if (API_BASE_URL || response.status < 500 || response.status > 504) {
+    return false
+  }
+
+  const contentType = response.headers.get('content-type') || ''
+
+  if (typeof payload === 'string') {
+    const normalized = payload.toLowerCase()
+
+    if (
+      normalized.includes('econnrefused')
+      || normalized.includes('proxy error')
+      || normalized.includes('unable to proxy')
+      || normalized.includes('connection refused')
+      || normalized.includes('<html')
+    ) {
+      return true
+    }
+  }
+
+  return !contentType.includes('application/json')
+}
+
 async function request(path, { method = 'GET', body, token } = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers: {
-      ...(body ? { 'Content-Type': 'application/json' } : {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  })
+  let response
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: {
+        ...(body ? { 'Content-Type': 'application/json' } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    })
+  } catch {
+    const backendTarget = API_BASE_URL || 'the local /api backend'
+    throw new Error(`Unable to reach ${backendTarget}. Make sure the backend server is running.`)
+  }
 
   const payload = await parseResponse(response)
 
   if (!response.ok) {
+    if (isLikelyDevProxyFailure(response, payload)) {
+      throw new Error('Unable to reach the backend server at http://localhost:8080. Start the Spring Boot backend and try again.')
+    }
+
     const error = new Error(toErrorMessage(payload, `Request failed with status ${response.status}`))
     error.status = response.status
     error.payload = payload

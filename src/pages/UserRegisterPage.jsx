@@ -56,6 +56,7 @@ export default function UserRegisterPage() {
         name: form.name.trim(),
         username,
         email,
+        phone: form.phone.trim(),
         password: form.password,
       })
 
@@ -64,10 +65,7 @@ export default function UserRegisterPage() {
         password: form.password,
       })
 
-      saveMemberSession({
-        ...session,
-        phone: form.phone.trim(),
-      })
+      saveMemberSession(session)
 
       navigate('/app/intake')
     } catch (requestError) {

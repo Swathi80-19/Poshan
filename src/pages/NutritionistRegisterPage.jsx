@@ -82,6 +82,8 @@ export default function NutritionistRegisterPage() {
         name: form.name.trim(),
         username,
         email,
+        phone: form.phone.trim(),
+        experience: form.experience ? Number(form.experience) : null,
         password: form.password,
         specialization: form.specialization,
       })

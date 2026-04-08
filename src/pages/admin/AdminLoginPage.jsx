@@ -10,7 +10,7 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ identifier: '', password: '' })
 
   useEffect(() => {
     clearNutritionistSession()
@@ -23,7 +23,7 @@ export default function AdminLoginPage() {
 
     try {
       const session = await loginNutritionist({
-        email: form.email.trim().toLowerCase(),
+        email: form.identifier.trim().toLowerCase(),
         password: form.password,
       })
 
@@ -87,21 +87,20 @@ export default function AdminLoginPage() {
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label className="form-label">Work email</label>
+              <label className="form-label">Work email or username</label>
               <div className="form-input-icon-wrap">
                 <Mail size={18} className="form-input-icon" />
                 <input
                   className="form-input"
-                  type="email"
-                  value={form.email}
+                  value={form.identifier}
                   onChange={(event) => {
                     if (error) {
                       setError('')
                     }
 
-                    setForm((current) => ({ ...current, email: event.target.value }))
+                    setForm((current) => ({ ...current, identifier: event.target.value }))
                   }}
-                  placeholder="doctor@clinic.com"
+                  placeholder="doctor@clinic.com or dr_bipasha"
                   required
                 />
               </div>
