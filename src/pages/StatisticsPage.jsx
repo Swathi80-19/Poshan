@@ -279,7 +279,7 @@ export default function StatisticsPage() {
 
         <div className="g-2">
           <ChartFrame title="Macro split" subtitle="Selected nutrition period shown as a live macro distribution">
-            <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 18, alignItems: 'center' }}>
+            <div className="stats-macro-layout">
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie data={macrosPie} innerRadius={54} outerRadius={82} paddingAngle={3} dataKey="value">

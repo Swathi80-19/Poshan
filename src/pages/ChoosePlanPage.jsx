@@ -94,7 +94,7 @@ function CardForm({ onPay, loading, consentBlocked }) {
                     style={{ width: '100%', padding: '11px 14px', borderRadius: 12, border: '1.5px solid #E5E7EB', fontSize: 14, outline: 'none', fontFamily: 'inherit', letterSpacing: '0.5px' }}
                 />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div className="form-split-grid" style={{ gap: 12 }}>
                 <div>
                     <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 }}>Expiry Date</label>
                     <input
@@ -138,7 +138,7 @@ function UPIForm({ onPay, loading, consentBlocked }) {
     ]
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <div className="payment-app-grid" style={{ display: 'flex', gap: 10 }}>
                 {apps.map(app => (
                     <button
                         key={app.id}
@@ -184,7 +184,7 @@ function NetBankingForm({ onPay, loading, consentBlocked }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8, display: 'block' }}>Select Bank</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <div className="form-split-grid" style={{ gap: 8 }}>
                     {banks.map(bank => (
                         <button
                             key={bank}
@@ -248,7 +248,7 @@ function SuccessScreen({ plan, navigate }) {
                         </div>
                     ))}
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div className="mobile-action-row" style={{ display: 'flex', gap: 12 }}>
                     <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => navigate('/app/activity')}>
                         View Appointments
                     </button>
@@ -315,7 +315,7 @@ export default function ChoosePlanPage() {
             </div>
 
             {/* Step indicator */}
-            <div style={{ padding: '10px 32px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="plan-step-indicator">
                 {['Choose Plan', 'Payment', 'Confirmation'].map((s, i) => (
                     <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{
@@ -334,7 +334,7 @@ export default function ChoosePlanPage() {
 
             <div className="page-body">
                 {step === 'plan' ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 28 }}>
+                    <div className="plan-layout">
                         {/* Plans */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                             <p style={{ fontSize: 14, color: '#6B7280', marginBottom: 4 }}>
@@ -475,7 +475,7 @@ export default function ChoosePlanPage() {
                             </div>
 
                             {/* Trust badges */}
-                            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                            <div className="trust-badge-row" style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                                 {['🔒 Secure', '⚡ Instant', '🔄 Cancel anytime'].map(b => (
                                     <div key={b} style={{ fontSize: 11, color: '#6B7280', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 20, padding: '4px 10px' }}>{b}</div>
                                 ))}
@@ -484,7 +484,7 @@ export default function ChoosePlanPage() {
                     </div>
                 ) : (
                     /* === PAYMENT STEP === */
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 28 }}>
+                    <div className="plan-payment-layout">
                         {/* Payment form */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                             {/* Method selector */}

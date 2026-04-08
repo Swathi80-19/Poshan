@@ -2309,6 +2309,89 @@ img {
   border-bottom: 0;
 }
 
+.messages-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 1rem;
+  min-height: 0;
+}
+
+.messages-list-card,
+.messages-thread-card {
+  min-width: 0;
+}
+
+.messages-bubble {
+  width: min(68%, 32rem);
+}
+
+.stats-macro-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+}
+
+.form-split-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.doctor-split-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 28px;
+}
+
+.doctor-profile-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 28px;
+}
+
+.time-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.plan-step-indicator {
+  padding: 10px 32px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plan-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 28px;
+}
+
+.plan-payment-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 28px;
+}
+
+.patient-detail-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.patient-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
 .timeline-time,
 .queue-time {
   min-width: 62px;
@@ -2950,6 +3033,13 @@ img {
   .admin-hero-grid,
   .admin-overview,
   .g-2-auto,
+  .doctor-split-layout,
+  .doctor-profile-layout,
+  .plan-layout,
+  .plan-payment-layout,
+  .patient-detail-layout,
+  .messages-layout,
+  .stats-macro-layout,
   .auth-screen,
   .auth-layout {
     grid-template-columns: 1fr;
@@ -3019,14 +3109,22 @@ img {
   .admin-nav {
     flex-direction: row;
     gap: 0.25rem;
-    padding: 0;
+    padding: 0 0.2rem 0.15rem;
     background: transparent;
     border: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .sidebar-nav::-webkit-scrollbar,
+  .admin-nav::-webkit-scrollbar {
+    display: none;
   }
 
   .sidebar-nav-item,
   .admin-nav-item {
-    flex: 1;
+    flex: 0 0 78px;
+    min-width: 78px;
     flex-direction: column;
     gap: 0.35rem;
     padding: 0.55rem 0.35rem;
@@ -3049,6 +3147,12 @@ img {
   .nav-label {
     font-size: 0.68rem;
     line-height: 1.2;
+  }
+
+  .nav-badge {
+    position: absolute;
+    top: 0.28rem;
+    right: 0.4rem;
   }
 
   .main-content,
@@ -3099,6 +3203,26 @@ img {
 
   .tracker-form-span-2 {
     grid-column: auto;
+  }
+
+  .time-slot-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .plan-step-indicator,
+  .step-indicator,
+  .messages-thread-header,
+  .messages-composer,
+  .legend-row,
+  .patient-tab-row,
+  .patient-quick-actions,
+  .trust-badge-row,
+  .payment-app-grid {
+    flex-wrap: wrap;
+  }
+
+  .doctor-cta {
+    gap: 1rem;
   }
 
   .tracker-log-item {
@@ -3267,6 +3391,60 @@ img {
 
   .data-table td {
     padding: 0.7rem 1rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .messages-layout,
+  .doctor-split-layout,
+  .doctor-profile-layout,
+  .plan-layout,
+  .plan-payment-layout,
+  .patient-detail-layout,
+  .patient-detail-stats,
+  .stats-macro-layout,
+  .form-split-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .messages-bubble {
+    width: min(100%, 32rem);
+  }
+
+  .messages-thread-body {
+    padding: 18px 16px !important;
+  }
+
+  .messages-thread-header,
+  .messages-composer {
+    padding-inline: 16px !important;
+  }
+
+  .time-slot-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .doctor-date-row,
+  .doctor-appointment-modes,
+  .mobile-action-row,
+  .doctor-cta {
+    flex-direction: column;
+  }
+
+  .doctor-cta {
+    align-items: flex-start !important;
+  }
+
+  .plan-step-indicator {
+    padding-inline: 18px;
+  }
+
+  .patient-quick-actions > * {
+    flex: 1 1 calc(50% - 10px);
+  }
+
+  .trust-badge-row {
+    justify-content: flex-start !important;
   }
 }
 

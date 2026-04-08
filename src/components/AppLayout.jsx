@@ -16,7 +16,7 @@ const navItems = [
   { icon: BarChart2, label: 'Statistics', to: '/app/statistics' },
   { icon: Search, label: 'Experts', to: '/app/search' },
   { icon: Calendar, label: 'Tracker', to: '/app/activity' },
-  { icon: MessageSquare, label: 'Messages', to: '/app/messages', badge: 3 },
+  { icon: MessageSquare, label: 'Messages', to: '/app/messages' },
 ]
 
 export default function AppLayout() {

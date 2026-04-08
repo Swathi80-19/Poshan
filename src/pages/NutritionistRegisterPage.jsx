@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
@@ -13,7 +13,8 @@ import {
   User,
 } from 'lucide-react'
 import poshanLogoWhite from '../assets/poshan-logo-white.svg'
-import { saveNutritionistSession } from '../lib/session'
+import { clearNutritionistSession, saveNutritionistSession } from '../lib/session'
+import { loginNutritionist, registerNutritionist } from '../lib/memberApi'
 
 const specializations = [
   'Clinical Nutrition',
@@ -32,6 +33,8 @@ export default function NutritionistRegisterPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({
     name: '',
     username: '',
@@ -43,19 +46,59 @@ export default function NutritionistRegisterPage() {
     confirm: '',
   })
 
-  const setField = (key, value) => setForm((current) => ({ ...current, [key]: value }))
+  useEffect(() => {
+    clearNutritionistSession()
+  }, [])
 
-  const handleCreate = (event) => {
+  const setField = (key, value) => {
+    if (error) {
+      setError('')
+    }
+
+    setForm((current) => ({ ...current, [key]: value }))
+  }
+
+  const handleCreate = async (event) => {
     event.preventDefault()
 
-    saveNutritionistSession({
-      name: form.name,
-      username: form.username || form.name,
-      email: form.email,
-      specialization: form.specialization,
-    })
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
 
-    navigate('/admin/dashboard')
+    if (form.password !== form.confirm) {
+      setError('Password and confirm password must match.')
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError('')
+
+      const email = form.email.trim().toLowerCase()
+      const username = form.username.trim().toLowerCase()
+
+      await registerNutritionist({
+        name: form.name.trim(),
+        username,
+        email,
+        password: form.password,
+        specialization: form.specialization,
+      })
+
+      const session = await loginNutritionist({
+        email,
+        password: form.password,
+      })
+
+      saveNutritionistSession(session)
+      navigate('/admin/dashboard')
+    } catch (requestError) {
+      clearNutritionistSession()
+      setError(requestError.message || 'Unable to create the nutritionist account right now.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -75,15 +118,15 @@ export default function NutritionistRegisterPage() {
             </div>
           </div>
 
-          <h1 className="auth-heading">Set up a more polished nutrition practice.</h1>
+          <h1 className="auth-heading">Set up a real nutritionist practice account.</h1>
           <p className="auth-copy">
-            Create your clinical workspace, define your practice identity, and move into a cleaner nutritionist dashboard.
+            Registered nutritionists now flow directly into the expert directory, member booking pages, and admin workspace.
           </p>
 
           <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
-            <li><span className="feature-dot">•</span><span>Aligned onboarding with the same auth structure as member accounts.</span></li>
-            <li><span className="feature-dot">•</span><span>Session identity follows the nutritionist account you create.</span></li>
-            <li><span className="feature-dot">•</span><span>Updated clinical surfaces with a calmer Poshan theme.</span></li>
+            <li><span className="feature-dot">•</span><span>Registration writes to the backend, not local demo storage.</span></li>
+            <li><span className="feature-dot">•</span><span>New accounts show up in the member expert list automatically.</span></li>
+            <li><span className="feature-dot">•</span><span>Appointments and patients stay tied to the logged-in nutritionist account.</span></li>
           </ul>
         </div>
       </section>
@@ -211,13 +254,20 @@ export default function NutritionistRegisterPage() {
               </div>
 
               <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
-                <span className="feature-dot">✓</span>
+                <span className="feature-dot">•</span>
                 <span>You agree to the clinical usage terms, privacy rules, and professional communication standards.</span>
               </div>
 
-              <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
-                Create nutritionist account
-                <ArrowRight size={16} />
+              {error ? (
+                <div className="auth-note" style={{ marginBottom: '1.2rem', color: '#bf5f47' }}>
+                  <span className="feature-dot">•</span>
+                  <span>{error}</span>
+                </div>
+              ) : null}
+
+              <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={loading}>
+                {loading ? 'Creating nutritionist account...' : 'Create nutritionist account'}
+                {!loading ? <ArrowRight size={16} /> : null}
               </button>
             </form>
           )}

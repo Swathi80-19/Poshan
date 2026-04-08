@@ -78,11 +78,54 @@ export function loginMember(payload) {
   })
 }
 
+export function registerNutritionist(payload) {
+  return request('/api/auth/nutritionists/register', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
+export function loginNutritionist(payload) {
+  return request('/api/auth/nutritionists/login', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
 export function logoutMember(token) {
   return request('/api/auth/logout', {
     method: 'POST',
     token,
   })
+}
+
+export function getNutritionists() {
+  return request('/api/nutritionists')
+}
+
+export function createAppointment(token, payload) {
+  return request('/api/appointments', {
+    method: 'POST',
+    token,
+    body: payload,
+  })
+}
+
+export function getMemberAppointments(token) {
+  return request('/api/appointments/member', { token })
+}
+
+export function getNutritionistAppointments(token, status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+  return request(`/api/appointments/nutritionist${query}`, { token })
+}
+
+export function getNutritionistPatients(token) {
+  return request('/api/nutritionists/me/patients', { token })
+}
+
+export function getNutritionistDashboard(token) {
+  return request('/api/nutritionists/me/dashboard', { token })
 }
 
 export function getMemberProfile(token) {

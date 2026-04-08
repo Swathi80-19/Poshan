@@ -1,58 +1,181 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Calendar, Lock, MoreVertical, Paperclip, Search, Send, Smile } from 'lucide-react'
+import { Bell, Calendar, Lock, Paperclip, Search, Send, Smile } from 'lucide-react'
+import { getMemberAppointments } from '../lib/memberApi'
+import { getMemberDisplayName, getMemberSession } from '../lib/session'
 
-const conversations = [
-  { id: 1, name: 'Dr. Bipasha', specialty: 'Dietitian', message: 'Sounds good, see you at 3 PM.', time: 'Now', unread: 0, initials: 'BP', tint: '#eef3ef', online: true, active: true, appointmentTime: 'Today, 3:00 PM' },
-  { id: 2, name: 'Dr. Sara Ali Khan', specialty: 'Nutritionist', message: 'Great progress. Keep it up.', time: '4 days ago', unread: 0, initials: 'SK', tint: '#f3e4d8', online: true, active: false },
-  { id: 3, name: 'Dr. Aishwarya', specialty: 'Nutritionist', message: 'Your meal plan is ready.', time: '2 weeks ago', unread: 1, initials: 'AI', tint: '#f1ede6', online: false, active: false },
-]
+const THREAD_STORAGE_KEY = 'poshan_member_messages_v1'
+const tintPalette = ['#eef3ef', '#f3e4d8', '#f1ede6', '#efe8d9', '#e8f0fb', '#eee6fa']
 
-const initialMessages = {
-  1: [
-    { id: 1, from: 'doctor', text: 'Hello Krishna. Ready for our session today at 3 PM?', time: '10:00 AM' },
-    { id: 2, from: 'me', text: 'Yes, I have the meal notes ready and want to review lunch timing.', time: '10:05 AM' },
-    { id: 3, from: 'doctor', text: 'Perfect. We will tighten protein timing and talk through recovery.', time: '10:07 AM' },
-  ],
-  2: [
-    { id: 1, from: 'doctor', text: 'The 1500 kcal plan looks steady. Keep following the same structure this week.', time: '4 days ago' },
-  ],
-  3: [
-    { id: 1, from: 'doctor', text: 'I uploaded the updated meal plan. Review it before your next booking.', time: '2 weeks ago' },
-  ],
+function canUseStorage() {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+}
+
+function readThreads() {
+  if (!canUseStorage()) return {}
+
+  try {
+    const value = window.localStorage.getItem(THREAD_STORAGE_KEY)
+    return value ? JSON.parse(value) : {}
+  } catch {
+    return {}
+  }
+}
+
+function writeThreads(value) {
+  if (!canUseStorage()) return
+  window.localStorage.setItem(THREAD_STORAGE_KEY, JSON.stringify(value))
+}
+
+function getInitials(name) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() || 'N'
+}
+
+function formatAppointmentTime(appointment) {
+  if (!appointment?.scheduledAt) {
+    return appointment?.dateLabel || 'Scheduled consultation'
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(appointment.scheduledAt))
+}
+
+function buildConversation(appointment, index, thread) {
+  const lastMessage = thread[thread.length - 1]
+  const tint = tintPalette[index % tintPalette.length]
+
+  return {
+    id: String(appointment.nutritionistId),
+    appointmentId: appointment.id,
+    name: appointment.nutritionistName,
+    specialty: appointment.mode?.replaceAll('_', ' ') || 'Consultation',
+    message: lastMessage?.text || `Upcoming appointment on ${appointment.dateLabel} at ${appointment.timeLabel}.`,
+    time: lastMessage?.time || formatAppointmentTime(appointment),
+    unread: 0,
+    initials: getInitials(appointment.nutritionistName || 'Nutritionist'),
+    tint,
+    active: appointment.status === 'UPCOMING',
+    appointmentTime: `${appointment.dateLabel}, ${appointment.timeLabel}`,
+  }
 }
 
 export default function MessagesPage() {
   const navigate = useNavigate()
   const endRef = useRef(null)
   const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState(1)
+  const [selected, setSelected] = useState('')
   const [draft, setDraft] = useState('')
-  const [messagesByConversation, setMessagesByConversation] = useState(initialMessages)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [appointments, setAppointments] = useState([])
+  const [messagesByConversation, setMessagesByConversation] = useState(() => readThreads())
+  const username = getMemberDisplayName()
+  const initial = username.charAt(0).toUpperCase()
+
+  useEffect(() => {
+    let cancelled = false
+    const session = getMemberSession()
+
+    if (!session.accessToken) {
+      setLoading(false)
+      setAppointments([])
+      return undefined
+    }
+
+    ;(async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const response = await getMemberAppointments(session.accessToken)
+
+        if (!cancelled) {
+          const uniqueAppointments = Array.isArray(response)
+            ? [...new Map(response.map((item) => [item.nutritionistId, item])).values()]
+            : []
+          setAppointments(uniqueAppointments)
+          setSelected((current) => current || String(uniqueAppointments[0]?.nutritionistId || ''))
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setAppointments([])
+          setError(requestError.message || 'Unable to load your consultations right now.')
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    writeThreads(messagesByConversation)
+  }, [messagesByConversation])
+
+  const conversations = useMemo(() => (
+    appointments.map((appointment, index) => {
+      const key = String(appointment.nutritionistId)
+      const thread = messagesByConversation[key] || [{
+        id: `seed-${appointment.id}`,
+        from: 'doctor',
+        text: `Your appointment with ${appointment.nutritionistName} is scheduled for ${appointment.dateLabel} at ${appointment.timeLabel}.`,
+        time: formatAppointmentTime(appointment),
+      }]
+
+      return buildConversation(appointment, index, thread)
+    })
+  ), [appointments, messagesByConversation])
 
   const filtered = conversations.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    item.specialty.toLowerCase().includes(search.toLowerCase()),
+    item.name.toLowerCase().includes(search.toLowerCase())
+    || item.specialty.toLowerCase().includes(search.toLowerCase()),
   )
 
-  const activeConversation = conversations.find((item) => item.id === selected)
-  const messages = messagesByConversation[selected] || []
+  const activeConversation = conversations.find((item) => item.id === selected) || filtered[0] || null
+  const messages = activeConversation ? (
+    messagesByConversation[activeConversation.id] || [{
+      id: `seed-${activeConversation.appointmentId}`,
+      from: 'doctor',
+      text: `Your appointment with ${activeConversation.name} is scheduled for ${activeConversation.appointmentTime}.`,
+      time: activeConversation.time,
+    }]
+  ) : []
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    if (!selected && filtered[0]) {
+      setSelected(filtered[0].id)
+    }
+  }, [filtered, selected])
 
   const sendMessage = () => {
     if (!draft.trim() || !activeConversation?.active) return
 
     setMessagesByConversation((current) => ({
       ...current,
-      [selected]: [
-        ...(current[selected] || []),
+      [activeConversation.id]: [
+        ...(current[activeConversation.id] || messages),
         {
           id: Date.now(),
           from: 'me',
-          text: draft,
+          text: draft.trim(),
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
         },
       ],
@@ -61,7 +184,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="animate-fade" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="animate-fade messages-page">
       <div className="page-header">
         <div className="page-header-left">
           <span className="page-header-greeting">Secure consultations</span>
@@ -69,20 +192,29 @@ export default function MessagesPage() {
         </div>
         <div className="page-header-right">
           <button className="header-icon-btn"><Bell size={18} /></button>
-          <div className="header-avatar">K</div>
+          <div className="header-avatar">{initial}</div>
         </div>
       </div>
 
-      <div className="page-body" style={{ flex: 1, display: 'grid', gridTemplateColumns: '360px minmax(0, 1fr)', gap: 16, minHeight: 0 }}>
-        <aside className="card" style={{ padding: 14, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div className="page-body messages-layout" style={{ flex: 1 }}>
+        <aside className="card messages-list-card" style={{ padding: 14, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <div className="search-input-wrap" style={{ minHeight: 48 }}>
             <Search size={15} color="#7f8776" />
             <input placeholder="Search conversations" value={search} onChange={(event) => setSearch(event.target.value)} />
           </div>
 
           <div style={{ marginTop: 14, overflowY: 'auto', flex: 1 }}>
+            {loading ? <div className="admin-note">Loading real conversations...</div> : null}
+            {error ? <div className="admin-note">{error}</div> : null}
+            {!loading && !error && !filtered.length ? (
+              <div className="admin-note">
+                Messages appear only after you book a real nutritionist appointment.
+              </div>
+            ) : null}
+
             {filtered.map((conversation) => {
-              const isSelected = selected === conversation.id
+              const isSelected = activeConversation?.id === conversation.id
+
               return (
                 <button
                   key={conversation.id}
@@ -110,8 +242,7 @@ export default function MessagesPage() {
                   </div>
                   <div style={{ color: '#7f8776', fontSize: 13, lineHeight: 1.5 }}>{conversation.message}</div>
                   <div className="pill-row" style={{ marginTop: 10 }}>
-                    {conversation.active ? <span className="badge badge-green">Active consult</span> : null}
-                    {conversation.unread ? <span className="badge badge-amber">{conversation.unread} new</span> : null}
+                    {conversation.active ? <span className="badge badge-green">Active consult</span> : <span className="badge badge-gray">Read only</span>}
                   </div>
                 </button>
               )
@@ -119,27 +250,28 @@ export default function MessagesPage() {
           </div>
         </aside>
 
-        <section className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(92,120,74,0.08)', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div className="queue-avatar" style={{ background: activeConversation?.tint }}>{activeConversation?.initials}</div>
+        <section className="card messages-thread-card" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+          <div className="messages-thread-header" style={{ padding: '16px 20px', borderBottom: '1px solid rgba(92,120,74,0.08)', display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div className="queue-avatar" style={{ background: activeConversation?.tint }}>{activeConversation?.initials || 'N'}</div>
             <div>
-              <div className="queue-title">{activeConversation?.name}</div>
+              <div className="queue-title">{activeConversation?.name || 'No conversation selected'}</div>
               <div className="queue-sub">
-                {activeConversation?.active ? `Consult window: ${activeConversation.appointmentTime}` : activeConversation?.specialty}
+                {activeConversation ? `Consult window: ${activeConversation.appointmentTime}` : 'Book an appointment to start messaging'}
               </div>
             </div>
             <div style={{ flex: 1 }} />
             {activeConversation?.active ? <span className="badge badge-green">Chat unlocked</span> : <span className="badge badge-gray">No active booking</span>}
             <button className="header-icon-btn" onClick={() => navigate('/app/activity')}><Calendar size={16} /></button>
-            <button className="header-icon-btn"><MoreVertical size={16} /></button>
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '22px 24px', background: 'rgba(246,240,229,0.45)' }}>
-            {messages.map((message) => (
+          <div className="messages-thread-body" style={{ flex: 1, overflowY: 'auto', padding: '22px 24px', background: 'rgba(246,240,229,0.45)' }}>
+            {!activeConversation ? (
+              <div className="admin-note">No real nutritionist conversation is available yet.</div>
+            ) : messages.map((message) => (
               <div key={message.id} style={{ display: 'flex', justifyContent: message.from === 'me' ? 'flex-end' : 'flex-start', marginBottom: 10 }}>
                 <div
+                  className="messages-bubble"
                   style={{
-                    maxWidth: '68%',
                     padding: '12px 16px',
                     borderRadius: message.from === 'me' ? '20px 20px 8px 20px' : '20px 20px 20px 8px',
                     background: message.from === 'me' ? 'linear-gradient(135deg, #73955f, #465c39)' : 'rgba(255,252,247,0.96)',
@@ -157,7 +289,7 @@ export default function MessagesPage() {
           </div>
 
           {activeConversation?.active ? (
-            <div style={{ padding: 18, borderTop: '1px solid rgba(92,120,74,0.08)', display: 'flex', gap: 10, alignItems: 'center' }}>
+            <div className="messages-composer" style={{ padding: 18, borderTop: '1px solid rgba(92,120,74,0.08)', display: 'flex', gap: 10, alignItems: 'center' }}>
               <button className="header-icon-btn"><Paperclip size={16} /></button>
               <input
                 value={draft}
@@ -178,7 +310,7 @@ export default function MessagesPage() {
             <div style={{ padding: 18, borderTop: '1px solid rgba(92,120,74,0.08)' }}>
               <div className="auth-note">
                 <Lock size={16} />
-                <span>Chat opens only during an active appointment window. Book a session to continue this conversation.</span>
+                <span>Chat opens only after you have a real upcoming appointment with a registered nutritionist.</span>
               </div>
               <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => navigate('/app/search')}>
                 Book appointment

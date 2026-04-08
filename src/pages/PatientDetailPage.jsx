@@ -102,7 +102,7 @@ export default function PatientDetailPage() {
             </div>
 
             <div className="page-body">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                <div className="patient-detail-layout">
                     {/* Left - calendar + visit stats */}
                     <div>
                         {/* Week selector */}
@@ -131,7 +131,7 @@ export default function PatientDetailPage() {
                         </div>
 
                         {/* Visit stats */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+                        <div className="patient-detail-stats" style={{ marginBottom: 20 }}>
                             <div style={{
                                 background: 'linear-gradient(135deg, #8BAF7C, #5A8A4A)',
                                 borderRadius: 16, padding: 20, color: 'white',
@@ -171,7 +171,7 @@ export default function PatientDetailPage() {
                         {/* Quick actions */}
                         <div className="card" style={{ padding: 20 }}>
                             <div className="section-title">Quick Actions</div>
-                            <div style={{ display: 'flex', gap: 10 }}>
+                            <div className="patient-quick-actions" style={{ display: 'flex', gap: 10 }}>
                                 {[
                                     { label: 'Add Patient', emoji: '➕' },
                                     { label: 'View Reports', emoji: '📊' },
@@ -197,7 +197,7 @@ export default function PatientDetailPage() {
                     {/* Right - patient list */}
                     <div>
                         <div style={{ marginBottom: 16 }}>
-                            <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+                            <div className="patient-tab-row" style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
                                 {patientTabs.map(tab => (
                                     <button
                                         key={tab}

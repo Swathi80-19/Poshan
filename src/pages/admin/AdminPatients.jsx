@@ -1,115 +1,80 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Bell, Filter, Plus, Search, Users } from 'lucide-react'
-
-const patients = [
-  {
-    id: 1,
-    name: 'Rekha Sharma',
-    age: 28,
-    goal: 'Weight loss',
-    sessions: 8,
-    lastSeen: '2 days ago',
-    status: 'active',
-    progress: 72,
-    bmi: 26.4,
-    color: '#f8eccc',
-    tags: ['PCOS', 'Vegetarian'],
-  },
-  {
-    id: 2,
-    name: 'Krishna Murthy',
-    age: 34,
-    goal: 'Muscle gain',
-    sessions: 5,
-    lastSeen: 'Yesterday',
-    status: 'active',
-    progress: 45,
-    bmi: 23.1,
-    color: '#e8f0fb',
-    tags: ['Diabetic', 'Sports'],
-  },
-  {
-    id: 3,
-    name: 'Priya Verma',
-    age: 22,
-    goal: 'PCOS management',
-    sessions: 12,
-    lastSeen: 'Today',
-    status: 'completed',
-    progress: 91,
-    bmi: 24.8,
-    color: '#eee6fa',
-    tags: ['PCOS'],
-  },
-  {
-    id: 4,
-    name: 'Arjun Reddy',
-    age: 45,
-    goal: 'Diabetes control',
-    sessions: 3,
-    lastSeen: '1 week ago',
-    status: 'new',
-    progress: 20,
-    bmi: 28.7,
-    color: '#fde8e2',
-    tags: ['Type 2', 'Hypertension'],
-  },
-  {
-    id: 5,
-    name: 'Sunita Patel',
-    age: 38,
-    goal: 'Heart health',
-    sessions: 6,
-    lastSeen: '3 days ago',
-    status: 'active',
-    progress: 58,
-    bmi: 25.2,
-    color: '#e7efe0',
-    tags: ['Cholesterol'],
-  },
-  {
-    id: 6,
-    name: 'Rahul Singh',
-    age: 29,
-    goal: 'Weight loss',
-    sessions: 10,
-    lastSeen: 'Today',
-    status: 'active',
-    progress: 65,
-    bmi: 30.1,
-    color: '#fff2df',
-    tags: ['Keto', 'High BP'],
-  },
-]
+import { useEffect, useMemo, useState } from 'react'
+import { Bell, Filter, Search, Users } from 'lucide-react'
+import { getNutritionistPatients } from '../../lib/memberApi'
+import { getNutritionistSession } from '../../lib/session'
 
 const statusTone = {
   active: 'badge-green',
-  completed: 'badge-emerald',
   new: 'badge-sky',
-  paused: 'badge-amber',
 }
-
-const statCards = [
-  { label: 'Total patients', getValue: (items) => items.length, tone: '#f8eccc', accent: '#c9953b' },
-  { label: 'Active plans', getValue: (items) => items.filter((item) => item.status === 'active').length, tone: '#e7efe0', accent: '#73955f' },
-  { label: 'Reviews due', getValue: (items) => items.filter((item) => item.progress < 60).length, tone: '#fde8e2', accent: '#bf5f47' },
-  { label: 'New this week', getValue: (items) => items.filter((item) => item.status === 'new').length, tone: '#e8f0fb', accent: '#4d82b7' },
-]
 
 function getInitials(name) {
   return name
     .split(' ')
+    .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0])
     .join('')
-    .toUpperCase()
+    .toUpperCase() || 'N'
+}
+
+function toPatientView(patient, index) {
+  const progress = Math.min((patient.foodLogs * 12) + (patient.activityLogs * 16), 100)
+
+  return {
+    ...patient,
+    id: patient.memberId,
+    goal: patient.goalFocus || 'Goal not set',
+    status: patient.foodLogs + patient.activityLogs > 0 ? 'active' : 'new',
+    progress,
+    lastSeen: patient.activityLogs > 0 ? `${patient.activityLogs} activity logs` : `${patient.foodLogs} food logs`,
+    color: ['#f8eccc', '#e8f0fb', '#eee6fa', '#fde8e2', '#e7efe0', '#fff2df'][index % 6],
+    tags: [`${patient.foodLogs} meals`, `${patient.activityLogs} check-ins`],
+  }
 }
 
 export default function AdminPatients() {
-  const navigate = useNavigate()
+  const session = getNutritionistSession()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('All')
+  const [patients, setPatients] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!session.accessToken) {
+      setLoading(false)
+      setError('Sign in as a nutritionist to view your real patients.')
+      return undefined
+    }
+
+    ;(async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const response = await getNutritionistPatients(session.accessToken)
+
+        if (!cancelled) {
+          setPatients(Array.isArray(response) ? response.map(toPatientView) : [])
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setPatients([])
+          setError(requestError.message || 'Unable to load the patient roster right now.')
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [session.accessToken])
 
   const filteredPatients = useMemo(
     () => patients.filter((patient) => {
@@ -117,12 +82,19 @@ export default function AdminPatients() {
       const searchValue = `${patient.name} ${patient.goal} ${patient.tags.join(' ')}`.toLowerCase()
       return matchesFilter && searchValue.includes(query.toLowerCase())
     }),
-    [filter, query],
+    [filter, patients, query],
   )
 
   const atRiskPatients = filteredPatients
     .filter((patient) => patient.progress < 60)
     .slice(0, 3)
+
+  const statCards = [
+    { label: 'Total patients', value: filteredPatients.length, tone: '#f8eccc', accent: '#c9953b' },
+    { label: 'Active plans', value: filteredPatients.filter((item) => item.status === 'active').length, tone: '#e7efe0', accent: '#73955f' },
+    { label: 'Reviews due', value: filteredPatients.filter((item) => item.progress < 60).length, tone: '#fde8e2', accent: '#bf5f47' },
+    { label: 'New patients', value: filteredPatients.filter((item) => item.status === 'new').length, tone: '#e8f0fb', accent: '#4d82b7' },
+  ]
 
   return (
     <div className="animate-fade">
@@ -137,10 +109,6 @@ export default function AdminPatients() {
           <button className="icon-btn">
             <Bell size={18} />
           </button>
-          <button className="btn btn-primary">
-            <Plus size={16} />
-            Add patient
-          </button>
         </div>
       </div>
 
@@ -150,17 +118,17 @@ export default function AdminPatients() {
             <div>
               <div className="eyebrow">Patient command center</div>
               <h2 className="hero-heading" style={{ marginTop: '0.55rem' }}>
-                Scan your roster with the same calm hierarchy used across the member dashboard.
+                This roster now shows the real members attached to the logged-in nutritionist.
               </h2>
               <p className="hero-copy">
-                Filters, search, progress, and care status are now grouped into one cleaner
-                workspace, so you can spot new patients, active plans, and review pressure faster.
+                Demo patient rows have been removed. Members appear here only when they have real sessions with this
+                nutritionist account and actual shared tracker data.
               </p>
 
               <div className="pill-row">
-                <span className="badge badge-green">4 active plans</span>
-                <span className="badge badge-amber">3 reviews due</span>
-                <span className="badge badge-sky">1 new intake</span>
+                <span className="badge badge-green">{patients.length} roster patients</span>
+                <span className="badge badge-amber">{atRiskPatients.length} low-log reviews</span>
+                <span className="badge badge-sky">Backend-driven list</span>
               </div>
             </div>
 
@@ -168,32 +136,27 @@ export default function AdminPatients() {
               <div className="dashboard-panel-heading">
                 <div>
                   <h3>Care load</h3>
-                  <p>Use this week&apos;s roster to prioritize follow-ups first</p>
+                  <p>Snapshot from real sessions and tracker logs</p>
                 </div>
                 <Users size={18} color="#73955f" />
               </div>
 
               <div className="mini-metric-grid">
                 <div className="mini-metric">
-                  <strong>72%</strong>
-                  <span>average completion pace</span>
+                  <strong>{patients.reduce((sum, item) => sum + item.sessions, 0)}</strong>
+                  <span>total booked sessions</span>
                 </div>
                 <div className="mini-metric">
-                  <strong>4</strong>
-                  <span>members seen this week</span>
+                  <strong>{patients.reduce((sum, item) => sum + item.foodLogs + item.activityLogs, 0)}</strong>
+                  <span>shared tracker logs</span>
                 </div>
-              </div>
-
-              <div className="admin-note" style={{ marginTop: '1rem' }}>
-                Rekha and Priya are stable. Arjun and Krishna should be reviewed first because
-                their program progress is below the current clinic target.
               </div>
             </div>
           </div>
         </section>
 
         <section className="summary-grid">
-          {statCards.map(({ label, getValue, tone, accent }) => (
+          {statCards.map(({ label, value, tone, accent }) => (
             <article key={label} className="metric-card">
               <div className="metric-card-top">
                 <div className="metric-card-icon" style={{ background: tone }}>
@@ -201,7 +164,7 @@ export default function AdminPatients() {
                 </div>
                 <span style={{ color: accent, fontWeight: 800, fontSize: '0.78rem' }}>Roster</span>
               </div>
-              <div className="metric-card-value">{getValue(filteredPatients)}</div>
+              <div className="metric-card-value">{value}</div>
               <div className="metric-card-label">{label}</div>
             </article>
           ))}
@@ -212,7 +175,7 @@ export default function AdminPatients() {
             <div className="dashboard-panel-heading">
               <div>
                 <h3>Patient list</h3>
-                <p>Search by member name, goal, or care tags</p>
+                <p>Search by member name, goal, or real tracker counts</p>
               </div>
             </div>
 
@@ -227,7 +190,7 @@ export default function AdminPatients() {
               </div>
 
               <div className="filter-tabs">
-                {['All', 'Active', 'New', 'Completed'].map((value) => (
+                {['All', 'Active', 'New'].map((value) => (
                   <button
                     key={value}
                     className={`filter-tab ${filter === value ? 'active' : ''}`}
@@ -243,76 +206,72 @@ export default function AdminPatients() {
               </button>
             </div>
 
-            <div className="admin-table-card">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Patient</th>
-                    <th>Goal</th>
-                    <th>BMI</th>
-                    <th>Sessions</th>
-                    <th>Progress</th>
-                    <th>Last seen</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPatients.map((patient) => (
-                    <tr key={patient.id} onClick={() => navigate('/admin/appointments')}>
-                      <td>
-                        <div className="admin-table-person">
-                          <div
-                            className="admin-avatar-chip"
-                            style={{ background: patient.color }}
-                          >
-                            {getInitials(patient.name)}
-                          </div>
-                          <div>
-                            <div className="admin-table-title">{patient.name}</div>
-                            <div className="admin-table-sub">Age {patient.age}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="admin-goal-block">
-                          <div className="admin-table-title">{patient.goal}</div>
-                          <div className="pill-row" style={{ marginTop: '0.4rem' }}>
-                            {patient.tags.map((tag) => (
-                              <span key={tag} className="badge badge-gray">{tag}</span>
-                            ))}
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="admin-table-title">{patient.bmi}</span>
-                      </td>
-                      <td>
-                        <span className="admin-table-title">{patient.sessions}</span>
-                      </td>
-                      <td>
-                        <div className="admin-progress-row">
-                          <div className="progress-bar-wrap">
-                            <div
-                              className="progress-bar-fill"
-                              style={{ width: `${patient.progress}%` }}
-                            />
-                          </div>
-                          <span>{patient.progress}%</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="admin-table-sub">{patient.lastSeen}</span>
-                      </td>
-                      <td>
-                        <span className={`badge ${statusTone[patient.status] || 'badge-gray'}`}>
-                          {patient.status}
-                        </span>
-                      </td>
+            {loading ? <div className="admin-note">Loading nutritionist patients...</div> : null}
+            {error ? <div className="admin-note">{error}</div> : null}
+            {!loading && !error && !filteredPatients.length ? (
+              <div className="admin-note">No patients are linked to this nutritionist account yet.</div>
+            ) : null}
+
+            {!!filteredPatients.length && (
+              <div className="admin-table-card">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Patient</th>
+                      <th>Goal</th>
+                      <th>Sessions</th>
+                      <th>Food logs</th>
+                      <th>Activity logs</th>
+                      <th>Progress</th>
+                      <th>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredPatients.map((patient) => (
+                      <tr key={patient.id}>
+                        <td>
+                          <div className="admin-table-person">
+                            <div className="admin-avatar-chip" style={{ background: patient.color }}>
+                              {getInitials(patient.name)}
+                            </div>
+                            <div>
+                              <div className="admin-table-title">{patient.name}</div>
+                              <div className="admin-table-sub">{patient.age ? `Age ${patient.age}` : 'Age not shared'}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="admin-goal-block">
+                            <div className="admin-table-title">{patient.goal}</div>
+                            <div className="pill-row" style={{ marginTop: '0.4rem' }}>
+                              {patient.tags.map((tag) => (
+                                <span key={tag} className="badge badge-gray">{tag}</span>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                        <td><span className="admin-table-title">{patient.sessions}</span></td>
+                        <td><span className="admin-table-title">{patient.foodLogs}</span></td>
+                        <td><span className="admin-table-title">{patient.activityLogs}</span></td>
+                        <td>
+                          <div className="admin-progress-row">
+                            <div className="progress-bar-wrap">
+                              <div className="progress-bar-fill" style={{ width: `${patient.progress}%` }} />
+                            </div>
+                            <span>{patient.progress}%</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`badge ${statusTone[patient.status] || 'badge-gray'}`}>
+                            {patient.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </section>
 
           <div className="admin-side-stack">
@@ -320,12 +279,12 @@ export default function AdminPatients() {
               <div className="dashboard-panel-heading">
                 <div>
                   <h3>Review priority</h3>
-                  <p>Members that need a closer plan check</p>
+                  <p>Members with the lightest logging activity</p>
                 </div>
               </div>
 
               <div className="signal-list">
-                {atRiskPatients.map((patient) => (
+                {atRiskPatients.length ? atRiskPatients.map((patient) => (
                   <div key={patient.id} className="signal-item">
                     <div className="signal-avatar" style={{ background: patient.color }}>
                       {getInitials(patient.name)}
@@ -333,28 +292,15 @@ export default function AdminPatients() {
                     <div>
                       <div className="signal-title">{patient.name}</div>
                       <div className="signal-sub">
-                        {patient.goal} with {patient.progress}% completion
+                        {patient.goal} with {patient.progress}% progress
                       </div>
                     </div>
                     <div className="signal-meta">{patient.lastSeen}</div>
                   </div>
-                ))}
+                )) : (
+                  <div className="admin-note">No review-priority patients right now.</div>
+                )}
               </div>
-            </section>
-
-            <section className="support-card">
-              <div className="dashboard-panel-heading">
-                <div>
-                  <h3>Roster notes</h3>
-                  <p>Quick reminders before you open a profile</p>
-                </div>
-              </div>
-
-              <ul className="check-list">
-                <li><span className="check-dot">1</span><span>Open new intakes first and confirm current weight, goals, and plan expectations.</span></li>
-                <li><span className="check-dot">2</span><span>Use the progress bar and last-seen field together before adjusting a stalled plan.</span></li>
-                <li><span className="check-dot">3</span><span>Keep care tags tight so search stays useful as more members join the roster.</span></li>
-              </ul>
             </section>
           </div>
         </div>

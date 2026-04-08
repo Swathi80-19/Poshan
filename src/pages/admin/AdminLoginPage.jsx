@@ -1,31 +1,40 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react'
 import poshanLogoWhite from '../../assets/poshan-logo-white.svg'
-import { saveNutritionistSession } from '../../lib/session'
+import { clearNutritionistSession, saveNutritionistSession } from '../../lib/session'
+import { loginNutritionist } from '../../lib/memberApi'
 
 export default function AdminLoginPage() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [form, setForm] = useState({ email: '', password: '' })
 
-  const enterPortal = () => {
-    const fallbackName = form.email?.split('@')[0] || 'nutritionist'
+  useEffect(() => {
+    clearNutritionistSession()
+  }, [])
 
-    saveNutritionistSession({
-      name: fallbackName,
-      username: fallbackName,
-      email: form.email,
-    })
-
-    navigate('/admin/dashboard')
-  }
-
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
     setLoading(true)
-    window.setTimeout(enterPortal, 700)
+    setError('')
+
+    try {
+      const session = await loginNutritionist({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+      })
+
+      saveNutritionistSession(session)
+      navigate('/admin/dashboard')
+    } catch (requestError) {
+      clearNutritionistSession()
+      setError(requestError.message || 'Unable to sign in right now.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -45,15 +54,15 @@ export default function AdminLoginPage() {
             </div>
           </div>
 
-          <h1 className="auth-heading">Step into a cleaner clinical operations board.</h1>
+          <h1 className="auth-heading">Sign into the real clinical workspace.</h1>
           <p className="auth-copy">
-            View patient signals, schedule flow, and practice updates from a more aligned nutritionist workspace.
+            The nutritionist portal now uses backend authentication, so dashboard, patients, and appointments follow the actual registered account.
           </p>
 
           <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
-            <li><span className="feature-dot">•</span><span>Aligned sign-in flow with the member workspace.</span></li>
-            <li><span className="feature-dot">•</span><span>Updated clinical theme and more readable admin surfaces.</span></li>
-            <li><span className="feature-dot">•</span><span>Session identity follows the nutritionist account you log in with.</span></li>
+            <li><span className="feature-dot">•</span><span>Uses the same backend auth flow as the member workspace.</span></li>
+            <li><span className="feature-dot">•</span><span>Shows only patients and appointments tied to the logged-in nutritionist.</span></li>
+            <li><span className="feature-dot">•</span><span>Removes the old local demo sign-in shortcut.</span></li>
           </ul>
         </div>
       </section>
@@ -76,11 +85,6 @@ export default function AdminLoginPage() {
 
           <p className="auth-copy">Sign in to your clinical workspace and continue your patient review flow.</p>
 
-          <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
-            <span className="feature-dot">•</span>
-            <span>The portal now uses the same aligned auth layout pattern as the member side.</span>
-          </div>
-
           <form onSubmit={handleSubmit}>
             <div className="form-group">
               <label className="form-label">Work email</label>
@@ -90,7 +94,13 @@ export default function AdminLoginPage() {
                   className="form-input"
                   type="email"
                   value={form.email}
-                  onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+                  onChange={(event) => {
+                    if (error) {
+                      setError('')
+                    }
+
+                    setForm((current) => ({ ...current, email: event.target.value }))
+                  }}
                   placeholder="doctor@clinic.com"
                   required
                 />
@@ -105,7 +115,13 @@ export default function AdminLoginPage() {
                   className="form-input"
                   type={showPassword ? 'text' : 'password'}
                   value={form.password}
-                  onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                  onChange={(event) => {
+                    if (error) {
+                      setError('')
+                    }
+
+                    setForm((current) => ({ ...current, password: event.target.value }))
+                  }}
                   placeholder="Enter your password"
                   style={{ paddingRight: '3rem' }}
                   required
@@ -119,6 +135,13 @@ export default function AdminLoginPage() {
                 </button>
               </div>
             </div>
+
+            {error ? (
+              <div className="auth-note" style={{ marginBottom: '1.2rem', color: '#bf5f47' }}>
+                <span className="feature-dot">•</span>
+                <span>{error}</span>
+              </div>
+            ) : null}
 
             <div className="auth-actions" style={{ marginTop: 0 }}>
               <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ flex: 1 }}>

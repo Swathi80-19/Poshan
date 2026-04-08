@@ -186,31 +186,44 @@ export function getMemberTrackingStorageKey() {
 
 export function getNutritionistSession() {
   return safeReadJSON(NUTRITIONIST_SESSION_KEY, {
+    id: null,
     name: '',
     username: '',
     email: '',
+    role: 'NUTRITIONIST',
     specialization: '',
     loginCount: 0,
     lastLoginAt: null,
+    accessToken: '',
   })
 }
 
 export function saveNutritionistSession({
+  id = null,
   name = '',
   username = '',
   email = '',
+  role = 'NUTRITIONIST',
   specialization = '',
+  loginCount,
+  lastLoginAt,
+  accessToken = '',
 }) {
   const current = getNutritionistSession()
   const normalizedUsername = username || name || email.split('@')[0] || 'nutritionist'
 
   const session = {
+    id,
     name: name || normalizedUsername,
     username: normalizedUsername,
     email,
+    role,
     specialization,
-    loginCount: current.username === normalizedUsername ? current.loginCount + 1 : 1,
-    lastLoginAt: new Date().toISOString(),
+    loginCount: Number.isFinite(loginCount)
+      ? loginCount
+      : current.username === normalizedUsername ? current.loginCount + 1 : 1,
+    lastLoginAt: lastLoginAt || new Date().toISOString(),
+    accessToken,
   }
 
   if (canUseStorage()) {
@@ -221,6 +234,17 @@ export function saveNutritionistSession({
   safeWriteJSON(NUTRITIONIST_SESSION_KEY, session)
   emitSessionEvent(NUTRITIONIST_SESSION_EVENT, session)
   return session
+}
+
+export function clearNutritionistSession() {
+  safeRemove(NUTRITIONIST_SESSION_KEY)
+
+  if (canUseStorage()) {
+    window.localStorage.removeItem('poshan_nutri_username')
+    window.localStorage.removeItem('poshan_nutri_name')
+  }
+
+  emitSessionEvent(NUTRITIONIST_SESSION_EVENT, getNutritionistSession())
 }
 
 function getPaymentStorageKey() {

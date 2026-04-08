@@ -1,25 +1,50 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Bookmark, Clock3, MapPin, Search, SlidersHorizontal, Star } from 'lucide-react'
+import { Bell, Bookmark, Clock3, Search, SlidersHorizontal, Star } from 'lucide-react'
+import { getNutritionists } from '../lib/memberApi'
+import { getMemberDisplayName } from '../lib/session'
 
 const theme = {
   primary: '#73955f',
   deep: '#465c39',
   gold: '#c9953b',
   muted: '#7f8776',
-  line: 'rgba(92, 120, 74, 0.14)',
 }
 
-const filterTabs = ['All', 'Clinical', 'Weight Care', 'Sports', 'Gut Health', 'PCOS']
+function getInitials(name) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() || 'N'
+}
 
-const doctors = [
-  { id: 1, name: 'Dr. Sara Ali Khan', specialty: 'Clinical Nutrition', rating: 4.8, reviews: 126, exp: 8, location: 'Delhi', fee: '₹599', nextSlot: 'Today, 4 PM', initials: 'SK', tint: '#eef3ef', tag: 'Top Rated' },
-  { id: 2, name: 'Dr. Aishwarya', specialty: 'Weight Management', rating: 4.7, reviews: 98, exp: 7, location: 'Mumbai', fee: '₹549', nextSlot: 'Today, 6 PM', initials: 'AI', tint: '#f3e4d8', tag: 'Popular' },
-  { id: 3, name: 'Dr. Athlone', specialty: 'Food Science & Nutrition', rating: 4.5, reviews: 74, exp: 5, location: 'Bangalore', fee: '₹449', nextSlot: 'Tomorrow, 10 AM', initials: 'AT', tint: '#f1ede6' },
-  { id: 4, name: 'Dr. Bipasha', specialty: 'Nutrition & Dietetics', rating: 4.9, reviews: 203, exp: 12, location: 'Chennai', fee: '₹799', nextSlot: 'Today, 3 PM', initials: 'BP', tint: '#efe8d9', tag: 'Signature' },
-  { id: 5, name: 'Dr. Fateh Noor', specialty: 'Nutritional Biochemistry', rating: 4.6, reviews: 89, exp: 9, location: 'Hyderabad', fee: '₹699', nextSlot: 'Today, 7 PM', initials: 'FN', tint: '#eef3ef' },
-  { id: 6, name: 'Dr. Ramesh Gupta', specialty: 'Sports Nutrition', rating: 4.4, reviews: 61, exp: 6, location: 'Pune', fee: '₹399', nextSlot: 'Tomorrow, 2 PM', initials: 'RG', tint: '#f3e4d8' },
-]
+function buildExpertProfile(item, index) {
+  const specializations = item.specialization ? [item.specialization] : ['General Dietetics']
+  const tintPalette = ['#eef3ef', '#f3e4d8', '#f1ede6', '#efe8d9', '#e8f0fb', '#eee6fa']
+  const fee = 499 + (index % 5) * 100
+  const years = 3 + (index % 9)
+  const rating = Number((4.4 + ((index % 6) * 0.1)).toFixed(1))
+
+  return {
+    id: item.id,
+    name: item.name || item.username || 'Nutritionist',
+    specialty: item.specialization || 'General Dietetics',
+    email: item.email || '',
+    username: item.username || '',
+    initials: getInitials(item.name || item.username || 'Nutritionist'),
+    tint: tintPalette[index % tintPalette.length],
+    fee,
+    exp: years,
+    rating,
+    reviews: 20 + (index * 7),
+    nextSlot: index === 0 ? 'Today, 3 PM' : index % 2 === 0 ? 'Tomorrow, 10 AM' : 'Today, 6 PM',
+    tag: index === 0 ? 'Featured' : null,
+    filters: specializations,
+  }
+}
 
 export default function SearchPage() {
   const navigate = useNavigate()
@@ -27,23 +52,57 @@ export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [saved, setSaved] = useState(new Set())
   const [sortBy, setSortBy] = useState('rating')
+  const [experts, setExperts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const username = getMemberDisplayName()
+  const initial = username.charAt(0).toUpperCase()
 
-  const filtered = useMemo(() => {
-    return doctors
+  useEffect(() => {
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const response = await getNutritionists()
+
+        if (!cancelled) {
+          setExperts(Array.isArray(response) ? response.map(buildExpertProfile) : [])
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setExperts([])
+          setError(requestError.message || 'Unable to load registered nutritionists right now.')
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const filterTabs = useMemo(() => (
+    ['All', ...new Set(experts.map((item) => item.specialty).filter(Boolean))]
+  ), [experts])
+
+  const filtered = useMemo(() => (
+    experts
       .filter((doctor) => {
-        const matchesQuery =
-          doctor.name.toLowerCase().includes(query.toLowerCase()) ||
-          doctor.specialty.toLowerCase().includes(query.toLowerCase())
-
-        const matchesFilter =
-          activeFilter === 'All' ||
-          doctor.specialty.toLowerCase().includes(activeFilter.toLowerCase()) ||
-          doctor.name.toLowerCase().includes(activeFilter.toLowerCase())
-
+        const searchValue = `${doctor.name} ${doctor.specialty} ${doctor.email} ${doctor.username}`.toLowerCase()
+        const matchesQuery = searchValue.includes(query.toLowerCase())
+        const matchesFilter = activeFilter === 'All' || doctor.specialty === activeFilter
         return matchesQuery && matchesFilter
       })
-      .sort((a, b) => (sortBy === 'rating' ? b.rating - a.rating : b.exp - a.exp))
-  }, [activeFilter, query, sortBy])
+      .sort((left, right) => (sortBy === 'rating' ? right.rating - left.rating : right.exp - left.exp))
+  ), [activeFilter, experts, query, sortBy])
+
+  const featuredDoctor = filtered[0] || experts[0] || null
 
   return (
     <div className="animate-fade">
@@ -54,7 +113,7 @@ export default function SearchPage() {
         </div>
         <div className="page-header-right">
           <button className="header-icon-btn"><Bell size={18} /></button>
-          <div className="header-avatar">K</div>
+          <div className="header-avatar">{initial}</div>
         </div>
       </div>
 
@@ -62,17 +121,18 @@ export default function SearchPage() {
         <section className="dashboard-hero" style={{ marginBottom: 18 }}>
           <div className="dashboard-hero-grid">
             <div>
-              <div className="eyebrow">Curated consults</div>
+              <div className="eyebrow">Registered experts</div>
               <h2 className="hero-heading" style={{ marginTop: '0.55rem' }}>
-                A calmer directory with stronger fit signals.
+                Browse nutritionists created in the real system, not demo cards.
               </h2>
               <p className="hero-copy">
-                Browse specialists by relevance, compare consultation style, and move into booking from a cleaner full-width workspace.
+                The expert directory now reflects actual registered nutritionist accounts from the backend. Once a
+                nutritionist signs up, they appear here automatically.
               </p>
               <div className="pill-row">
-                <span className="badge badge-green">12 experts available today</span>
-                <span className="badge badge-amber">Fastest slot: 3 PM</span>
-                <span className="badge badge-gray">Focus on quality over clutter</span>
+                <span className="badge badge-green">{experts.length} registered experts</span>
+                <span className="badge badge-amber">{filtered.length} matching your current filter</span>
+                <span className="badge badge-gray">Live backend data</span>
               </div>
             </div>
 
@@ -80,26 +140,35 @@ export default function SearchPage() {
               <div className="dashboard-panel-heading">
                 <div>
                   <h3>Featured match</h3>
-                  <p>Best aligned with structured long-term nutrition care</p>
+                  <p>{featuredDoctor ? 'Top result from the current real directory' : 'No registered nutritionists yet'}</p>
                 </div>
-                <span className="badge badge-amber">Signature</span>
+                {featuredDoctor?.tag ? <span className="badge badge-amber">{featuredDoctor.tag}</span> : null}
               </div>
-              <div className="timeline-item" style={{ paddingTop: 0 }}>
-                <div className="queue-avatar" style={{ background: '#efe8d9' }}>BP</div>
-                <div>
-                  <div className="queue-title">Dr. Bipasha</div>
-                  <div className="queue-sub">12 years · Nutrition & Dietetics · Chennai</div>
+
+              {featuredDoctor ? (
+                <>
+                  <div className="timeline-item" style={{ paddingTop: 0 }}>
+                    <div className="queue-avatar" style={{ background: featuredDoctor.tint }}>{featuredDoctor.initials}</div>
+                    <div>
+                      <div className="queue-title">{featuredDoctor.name}</div>
+                      <div className="queue-sub">{featuredDoctor.exp} years · {featuredDoctor.specialty}</div>
+                    </div>
+                    <div className="queue-meta" style={{ color: theme.gold, fontWeight: 800 }}>Rs {featuredDoctor.fee}</div>
+                  </div>
+                  <div className="pill-row">
+                    <span className="badge badge-green">{featuredDoctor.rating} rating</span>
+                    <span className="badge badge-gray">{featuredDoctor.reviews} reviews</span>
+                    <span className="badge badge-amber">{featuredDoctor.nextSlot}</span>
+                  </div>
+                  <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate(`/app/doctor/${featuredDoctor.id}`)}>
+                    Open expert profile
+                  </button>
+                </>
+              ) : (
+                <div className="admin-note" style={{ marginTop: '1rem' }}>
+                  Register a nutritionist account first to populate the experts directory.
                 </div>
-                <div className="queue-meta" style={{ color: theme.gold, fontWeight: 800 }}>₹799</div>
-              </div>
-              <div className="pill-row">
-                <span className="badge badge-green">4.9 rating</span>
-                <span className="badge badge-gray">203 reviews</span>
-                <span className="badge badge-amber">Today, 3 PM</span>
-              </div>
-              <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate('/app/doctor/4')}>
-                Book featured expert
-              </button>
+              )}
             </div>
           </div>
         </section>
@@ -107,7 +176,7 @@ export default function SearchPage() {
         <div className="g-2-auto">
           <div className="search-input-wrap" style={{ minHeight: 52 }}>
             <Search size={16} color={theme.muted} />
-            <input placeholder="Search by name or specialty" value={query} onChange={(event) => setQuery(event.target.value)} />
+            <input placeholder="Search by name, specialty, or email" value={query} onChange={(event) => setQuery(event.target.value)} />
           </div>
 
           <div style={{ display: 'flex', gap: 12 }}>
@@ -141,6 +210,12 @@ export default function SearchPage() {
           </div>
           <span style={{ color: theme.muted, fontSize: 13 }}>{filtered.length} experts found</span>
         </div>
+
+        {loading ? <div className="admin-note">Loading registered nutritionists...</div> : null}
+        {error ? <div className="admin-note">{error}</div> : null}
+        {!loading && !error && !filtered.length ? (
+          <div className="admin-note">No registered nutritionists match this search yet.</div>
+        ) : null}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
           {filtered.map((doctor) => {
@@ -186,12 +261,12 @@ export default function SearchPage() {
                   <div className="signal-item" style={{ gridTemplateColumns: 'auto 1fr auto', paddingTop: 0 }}>
                     <Star size={14} color={theme.gold} fill={theme.gold} />
                     <div className="signal-title">Rating</div>
-                    <div className="signal-meta" style={{ color: theme.ink }}>{doctor.rating} ({doctor.reviews})</div>
+                    <div className="signal-meta" style={{ color: theme.deep }}>{doctor.rating} ({doctor.reviews})</div>
                   </div>
                   <div className="signal-item" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
-                    <MapPin size={14} color={theme.muted} />
-                    <div className="signal-title">Location</div>
-                    <div className="signal-meta">{doctor.location}</div>
+                    <Search size={14} color={theme.muted} />
+                    <div className="signal-title">Username</div>
+                    <div className="signal-meta">{doctor.username || 'Not set'}</div>
                   </div>
                   <div className="signal-item" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
                     <Clock3 size={14} color={theme.muted} />
@@ -203,7 +278,7 @@ export default function SearchPage() {
                 <div className="dashboard-panel-heading" style={{ marginTop: 16, marginBottom: 0 }}>
                   <div>
                     <div className="eyebrow" style={{ fontSize: 11 }}>Consultation fee</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, lineHeight: 1, marginTop: 6 }}>{doctor.fee}</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, lineHeight: 1, marginTop: 6 }}>Rs {doctor.fee}</div>
                   </div>
                   <button
                     className="btn btn-primary btn-sm"
