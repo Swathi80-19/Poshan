@@ -7,6 +7,7 @@ import ChoicePage from './pages/ChoicePage'
 import UserLoginPage from './pages/UserLoginPage'
 import UserRegisterPage from './pages/UserRegisterPage'
 import NutritionistRegisterPage from './pages/NutritionistRegisterPage'
+import VerifyEmailPage from './pages/VerifyEmailPage'
 import AdminLoginPage from './pages/admin/AdminLoginPage'
 
 
@@ -29,13 +30,23 @@ import AdminAppointments from './pages/admin/AdminAppointments'
 import AdminPayments from './pages/admin/AdminPayments'
 import AdminReports from './pages/admin/AdminReports'
 import AdminProfile from './pages/admin/AdminProfile'
-import { getMemberSession } from './lib/session'
+import { getMemberSession, getNutritionistSession } from './lib/session'
 
 function RequireMemberAuth({ children }) {
   const session = getMemberSession()
 
   if (!session.accessToken) {
     return <Navigate to="/login" replace />
+  }
+
+  return children
+}
+
+function RequireNutritionistAuth({ children }) {
+  const session = getNutritionistSession()
+
+  if (!session.accessToken) {
+    return <Navigate to="/admin/login" replace />
   }
 
   return children
@@ -52,6 +63,7 @@ function App() {
         {/* User Auth */}
         <Route path="/login" element={<UserLoginPage />} />
         <Route path="/register" element={<UserRegisterPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
 
         {/* Nutritionist Auth */}
         <Route path="/nutritionist/register" element={<NutritionistRegisterPage />} />
@@ -80,7 +92,14 @@ function App() {
         </Route>
 
         {/* Admin / Nutritionist App */}
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route
+          path="/admin"
+          element={(
+            <RequireNutritionistAuth>
+              <AdminLayout />
+            </RequireNutritionistAuth>
+          )}
+        >
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="patients" element={<AdminPatients />} />

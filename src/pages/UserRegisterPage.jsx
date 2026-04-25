@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, AtSign, Eye, EyeOff, Lock, Mail, Phone, User } from 'lucide-react'
 import poshanLogoWhite from '../assets/poshan-logo-white.svg'
-import { clearMemberSession, saveMemberSession } from '../lib/session'
-import { loginMember, registerMember } from '../lib/memberApi'
+import { clearMemberSession } from '../lib/session'
+import { registerMember } from '../lib/memberApi'
 
 export default function UserRegisterPage() {
   const navigate = useNavigate()
@@ -60,14 +60,7 @@ export default function UserRegisterPage() {
         password: form.password,
       })
 
-      const session = await loginMember({
-        email,
-        password: form.password,
-      })
-
-      saveMemberSession(session)
-
-      navigate('/app/intake')
+      navigate(`/verify-email?email=${encodeURIComponent(email)}&role=MEMBER`)
     } catch (requestError) {
       setError(requestError.message || 'Unable to create your account right now.')
     } finally {
@@ -218,7 +211,7 @@ export default function UserRegisterPage() {
 
               <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
                 <span className="feature-dot">&#10003;</span>
-                <span>You agree to the Poshan terms, privacy standards, and the personalized nutrition care experience.</span>
+                <span>You will need to verify your email before the member workspace unlocks.</span>
               </div>
 
               {error ? (

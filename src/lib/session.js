@@ -104,6 +104,8 @@ export function getMemberSession() {
     loginCount: 0,
     lastLoginAt: null,
     accessToken: '',
+    emailVerified: false,
+    emailVerifiedAt: null,
   })
 }
 
@@ -117,6 +119,8 @@ export function saveMemberSession({
   loginCount,
   lastLoginAt,
   accessToken = '',
+  emailVerified = false,
+  emailVerifiedAt = null,
 }) {
   const normalizedUsername = username || name || email.split('@')[0] || 'member'
   const counts = getLoginCounts()
@@ -136,6 +140,8 @@ export function saveMemberSession({
     loginCount: nextCount,
     lastLoginAt: lastLoginAt || new Date().toISOString(),
     accessToken,
+    emailVerified,
+    emailVerifiedAt,
   }
 
   if (canUseStorage()) {
@@ -197,6 +203,8 @@ export function getNutritionistSession() {
     loginCount: 0,
     lastLoginAt: null,
     accessToken: '',
+    emailVerified: false,
+    emailVerifiedAt: null,
   })
 }
 
@@ -212,6 +220,8 @@ export function saveNutritionistSession({
   loginCount,
   lastLoginAt,
   accessToken = '',
+  emailVerified = false,
+  emailVerifiedAt = null,
 }) {
   const current = getNutritionistSession()
   const normalizedUsername = username || name || email.split('@')[0] || 'nutritionist'
@@ -230,6 +240,8 @@ export function saveNutritionistSession({
       : current.username === normalizedUsername ? current.loginCount + 1 : 1,
     lastLoginAt: lastLoginAt || new Date().toISOString(),
     accessToken,
+    emailVerified,
+    emailVerifiedAt,
   }
 
   if (canUseStorage()) {

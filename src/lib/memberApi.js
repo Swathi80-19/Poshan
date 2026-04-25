@@ -120,11 +120,39 @@ export function registerNutritionist(payload) {
   })
 }
 
+export function verifyEmailToken(payload) {
+  return request('/api/auth/verify-email', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
+export function resendVerificationEmail(payload) {
+  return request('/api/auth/resend-verification', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
+export function getVerificationStatus({ email, role }) {
+  const query = new URLSearchParams({
+    email,
+    role,
+  })
+
+  return request(`/api/auth/verification-status?${query.toString()}`)
+}
+
 export function loginNutritionist(payload) {
   return request('/api/auth/nutritionists/login', {
     method: 'POST',
     body: payload,
   })
+}
+
+export function isEmailVerificationRequiredError(error) {
+  const message = typeof error?.message === 'string' ? error.message.toLowerCase() : ''
+  return error?.status === 403 && message.includes('verify your email')
 }
 
 export function logoutMember(token) {

@@ -13,8 +13,8 @@ import {
   User,
 } from 'lucide-react'
 import poshanLogoWhite from '../assets/poshan-logo-white.svg'
-import { clearNutritionistSession, saveNutritionistSession } from '../lib/session'
-import { loginNutritionist, registerNutritionist } from '../lib/memberApi'
+import { clearNutritionistSession } from '../lib/session'
+import { registerNutritionist } from '../lib/memberApi'
 
 const specializations = [
   'Clinical Nutrition',
@@ -88,13 +88,7 @@ export default function NutritionistRegisterPage() {
         specialization: form.specialization,
       })
 
-      const session = await loginNutritionist({
-        email,
-        password: form.password,
-      })
-
-      saveNutritionistSession(session)
-      navigate('/admin/dashboard')
+      navigate(`/verify-email?email=${encodeURIComponent(email)}&role=NUTRITIONIST`)
     } catch (requestError) {
       clearNutritionistSession()
       setError(requestError.message || 'Unable to create the nutritionist account right now.')
@@ -257,7 +251,7 @@ export default function NutritionistRegisterPage() {
 
               <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
                 <span className="feature-dot">•</span>
-                <span>You agree to the clinical usage terms, privacy rules, and professional communication standards.</span>
+                <span>You will need to verify your work email before the clinical workspace unlocks.</span>
               </div>
 
               {error ? (

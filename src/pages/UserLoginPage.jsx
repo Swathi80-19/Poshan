@@ -3,14 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import poshanLogoWhite from '../assets/poshan-logo-white.svg'
 import { clearMemberSession, saveMemberSession } from '../lib/session'
-import { loginMember } from '../lib/memberApi'
+import { isEmailVerificationRequiredError, loginMember } from '../lib/memberApi'
 
 export default function UserLoginPage() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [verificationRequired, setVerificationRequired] = useState(false)
   const [form, setForm] = useState({ identifier: '', password: '' })
+  const showVerificationHelp = verificationRequired && form.identifier.includes('@')
 
   useEffect(() => {
     clearMemberSession()
@@ -20,6 +22,7 @@ export default function UserLoginPage() {
     event.preventDefault()
     setLoading(true)
     setError('')
+    setVerificationRequired(false)
 
     try {
       const session = await loginMember({
@@ -31,6 +34,7 @@ export default function UserLoginPage() {
       navigate('/app/dashboard')
     } catch (requestError) {
       clearMemberSession()
+      setVerificationRequired(isEmailVerificationRequiredError(requestError))
       setError(requestError.message || 'Unable to sign in right now.')
     } finally {
       setLoading(false)
@@ -105,6 +109,10 @@ export default function UserLoginPage() {
                       setError('')
                     }
 
+                    if (verificationRequired) {
+                      setVerificationRequired(false)
+                    }
+
                     setForm((current) => ({ ...current, identifier: event.target.value }))
                   }}
                   required
@@ -129,6 +137,10 @@ export default function UserLoginPage() {
                       setError('')
                     }
 
+                    if (verificationRequired) {
+                      setVerificationRequired(false)
+                    }
+
                     setForm((current) => ({ ...current, password: event.target.value }))
                   }}
                   style={{ paddingRight: '3rem' }}
@@ -149,6 +161,17 @@ export default function UserLoginPage() {
                 <span className="feature-dot">&bull;</span>
                 <span>{error}</span>
               </div>
+            ) : null}
+
+            {showVerificationHelp ? (
+              <button
+                type="button"
+                className="link-button"
+                style={{ marginBottom: '1.2rem' }}
+                onClick={() => navigate(`/verify-email?email=${encodeURIComponent(form.identifier.trim().toLowerCase())}&role=MEMBER`)}
+              >
+                Resend verification email
+              </button>
             ) : null}
 
             <div className="auth-actions" style={{ marginTop: 0 }}>

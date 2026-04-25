@@ -3,14 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react'
 import poshanLogoWhite from '../../assets/poshan-logo-white.svg'
 import { clearNutritionistSession, saveNutritionistSession } from '../../lib/session'
-import { loginNutritionist } from '../../lib/memberApi'
+import { isEmailVerificationRequiredError, loginNutritionist } from '../../lib/memberApi'
 
 export default function AdminLoginPage() {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [verificationRequired, setVerificationRequired] = useState(false)
   const [form, setForm] = useState({ identifier: '', password: '' })
+  const showVerificationHelp = verificationRequired && form.identifier.includes('@')
 
   useEffect(() => {
     clearNutritionistSession()
@@ -20,6 +22,7 @@ export default function AdminLoginPage() {
     event.preventDefault()
     setLoading(true)
     setError('')
+    setVerificationRequired(false)
 
     try {
       const session = await loginNutritionist({
@@ -31,6 +34,7 @@ export default function AdminLoginPage() {
       navigate('/admin/dashboard')
     } catch (requestError) {
       clearNutritionistSession()
+      setVerificationRequired(isEmailVerificationRequiredError(requestError))
       setError(requestError.message || 'Unable to sign in right now.')
     } finally {
       setLoading(false)
@@ -98,6 +102,10 @@ export default function AdminLoginPage() {
                       setError('')
                     }
 
+                    if (verificationRequired) {
+                      setVerificationRequired(false)
+                    }
+
                     setForm((current) => ({ ...current, identifier: event.target.value }))
                   }}
                   placeholder="doctor@clinic.com or dr_bipasha"
@@ -117,6 +125,10 @@ export default function AdminLoginPage() {
                   onChange={(event) => {
                     if (error) {
                       setError('')
+                    }
+
+                    if (verificationRequired) {
+                      setVerificationRequired(false)
                     }
 
                     setForm((current) => ({ ...current, password: event.target.value }))
@@ -140,6 +152,17 @@ export default function AdminLoginPage() {
                 <span className="feature-dot">•</span>
                 <span>{error}</span>
               </div>
+            ) : null}
+
+            {showVerificationHelp ? (
+              <button
+                type="button"
+                className="link-button"
+                style={{ marginBottom: '1.2rem' }}
+                onClick={() => navigate(`/verify-email?email=${encodeURIComponent(form.identifier.trim().toLowerCase())}&role=NUTRITIONIST`)}
+              >
+                Resend verification email
+              </button>
             ) : null}
 
             <div className="auth-actions" style={{ marginTop: 0 }}>

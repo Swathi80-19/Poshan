@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import poshanLogoWhite from '../../assets/poshan-logo-white.svg'
 import {
+  clearNutritionistSession,
   getNutritionistSession,
   NUTRITIONIST_SESSION_EVENT,
 } from '../../lib/session'
@@ -87,7 +88,10 @@ export default function AdminLayout() {
             type="button"
             className="admin-nav-item"
             style={{ color: '#bf5f47' }}
-            onClick={() => navigate('/choice')}
+            onClick={() => {
+              clearNutritionistSession()
+              navigate('/admin/login')
+            }}
           >
             <div className="admin-nav-icon">
               <LogOut size={17} />
