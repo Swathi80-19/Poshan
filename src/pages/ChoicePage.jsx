@@ -17,6 +17,7 @@ const choices = [
     action: '/login',
     description: 'Track meals, appointments, and progress in your personal wellness workspace.',
     eyebrow: 'For patients',
+    points: ['Meals and activity', 'Appointments and history'],
   },
   {
     title: 'Nutritionist login',
@@ -24,6 +25,7 @@ const choices = [
     action: '/admin/login',
     description: 'Manage patients, sessions, reports, and day-to-day practice decisions.',
     eyebrow: 'For professionals',
+    points: ['Patients and sessions', 'Reports and follow-ups'],
   },
 ]
 
@@ -86,7 +88,10 @@ export default function ChoicePage() {
             <div className="story-section-tag">Choose your entrance</div>
             <h1 className="choice-stage-title">Select the login that matches the person using Poshan.</h1>
             <p className="choice-stage-text">
-              The page opens cleanly, then keeps the next choice simple and clear.
+              Pick the workspace you want to open now. Each path takes you straight into the tools made for that role.
+            </p>
+            <p className="choice-stage-note">
+              Two clear paths, one secure account system. You can always switch later by signing out.
             </p>
           </div>
 
@@ -106,6 +111,11 @@ export default function ChoicePage() {
                 <div className="choice-stage-card-body">
                   <strong>{choice.title}</strong>
                   <p>{choice.description}</p>
+                  <div className="choice-stage-points" aria-hidden="true">
+                    {choice.points.map((point) => (
+                      <span key={point} className="choice-stage-point">{point}</span>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="choice-stage-card-foot">
@@ -114,6 +124,13 @@ export default function ChoicePage() {
                 </div>
               </button>
             ))}
+          </div>
+
+          <div className="choice-stage-support">
+            <span className="choice-stage-support-label">Quick reminder</span>
+            <p className="choice-stage-support-text">
+              Members continue to their personal wellness dashboard. Nutritionists continue to the clinical workspace.
+            </p>
           </div>
         </section>
       </div>
