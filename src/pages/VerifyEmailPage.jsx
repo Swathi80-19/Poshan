@@ -30,16 +30,21 @@ export default function VerifyEmailPage() {
   const token = searchParams.get('token') || ''
   const emailFromQuery = searchParams.get('email') || ''
   const roleFromQuery = normalizeRole(searchParams.get('role'))
-  const [status, setStatus] = useState(token ? 'verifying' : 'pending')
+  const verifiedFromQuery = searchParams.get('verified') === '1'
+  const messageFromQuery = searchParams.get('message') || ''
+  const errorFromQuery = searchParams.get('error') || ''
+  const [status, setStatus] = useState(verifiedFromQuery ? 'success' : token ? 'verifying' : errorFromQuery ? 'error' : 'pending')
   const [message, setMessage] = useState(
-    token
+    verifiedFromQuery
+      ? (messageFromQuery || 'Email verified successfully.')
+      : token
       ? 'Checking your verification link...'
       : 'We sent a verification link to your inbox. Open it to activate your account.'
   )
   const [resolvedEmail, setResolvedEmail] = useState(emailFromQuery)
   const [resolvedRole, setResolvedRole] = useState(roleFromQuery)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(errorFromQuery)
 
   const loginPath = useMemo(
     () => (resolvedRole === 'NUTRITIONIST' ? '/admin/login' : '/login'),
@@ -47,7 +52,7 @@ export default function VerifyEmailPage() {
   )
 
   useEffect(() => {
-    if (!token) {
+    if (!token || verifiedFromQuery) {
       return
     }
 
@@ -105,10 +110,10 @@ export default function VerifyEmailPage() {
     return () => {
       active = false
     }
-  }, [token, emailFromQuery, roleFromQuery])
+  }, [token, emailFromQuery, roleFromQuery, verifiedFromQuery])
 
   useEffect(() => {
-    if (token || !resolvedEmail) {
+    if (token || !resolvedEmail || verifiedFromQuery) {
       return
     }
 
@@ -144,7 +149,7 @@ export default function VerifyEmailPage() {
     return () => {
       active = false
     }
-  }, [token, resolvedEmail, resolvedRole])
+  }, [token, resolvedEmail, resolvedRole, verifiedFromQuery])
 
   const handleResend = async () => {
     if (!resolvedEmail) {
