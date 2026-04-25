@@ -5032,6 +5032,8 @@ img {
 .choice-stage-card {
   position: relative;
   min-height: 21rem;
+  display: flex;
+  flex-direction: column;
   padding: 1.5rem;
   border-radius: 2rem;
   background: rgba(255, 252, 247, 0.78);
@@ -5087,8 +5089,8 @@ img {
 }
 
 .choice-stage-card-foot {
-  position: absolute;
-  inset: auto 1.5rem 1.5rem 1.5rem;
+  margin-top: auto;
+  padding-top: 1.6rem;
   color: var(--sage-700);
   font-size: 0.92rem;
   font-weight: 800;
@@ -5298,7 +5300,7 @@ img {
   }
 
   .choice-stage-card-foot {
-    inset: auto 1.2rem 1.2rem 1.2rem;
+    padding-top: 1.15rem;
     font-size: 0.88rem;
   }
 
