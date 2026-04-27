@@ -151,7 +151,7 @@ export default function SearchPage() {
                     <div className="queue-avatar" style={{ background: featuredDoctor.tint }}>{featuredDoctor.initials}</div>
                     <div>
                       <div className="queue-title">{featuredDoctor.name}</div>
-                      <div className="queue-sub">{featuredDoctor.exp} years · {featuredDoctor.specialty}</div>
+                      <div className="queue-sub">{featuredDoctor.exp} years Â· {featuredDoctor.specialty}</div>
                     </div>
                     <div className="queue-meta" style={{ color: theme.gold, fontWeight: 800 }}>Rs {featuredDoctor.fee}</div>
                   </div>

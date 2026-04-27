@@ -120,9 +120,9 @@ export default function NutritionistRegisterPage() {
           </p>
 
           <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
-            <li><span className="feature-dot">•</span><span>Registration writes to the backend, not local demo storage.</span></li>
-            <li><span className="feature-dot">•</span><span>New accounts show up in the member expert list automatically.</span></li>
-            <li><span className="feature-dot">•</span><span>Appointments and patients stay tied to the logged-in nutritionist account.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Registration writes to the backend, not local demo storage.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>New accounts show up in the member expert list automatically.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Appointments and patients stay tied to the logged-in nutritionist account.</span></li>
           </ul>
         </div>
       </section>
@@ -250,13 +250,13 @@ export default function NutritionistRegisterPage() {
               </div>
 
               <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
-                <span className="feature-dot">•</span>
+                <span className="feature-dot">&bull;</span>
                 <span>You will need to verify your work email before the clinical workspace unlocks.</span>
               </div>
 
               {error ? (
                 <div className="auth-note" style={{ marginBottom: '1.2rem', color: '#bf5f47' }}>
-                  <span className="feature-dot">•</span>
+                  <span className="feature-dot">&bull;</span>
                   <span>{error}</span>
                 </div>
               ) : null}

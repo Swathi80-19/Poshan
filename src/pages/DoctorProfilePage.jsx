@@ -361,7 +361,7 @@ export default function DoctorProfilePage() {
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}>{doctor.name}</div>
                     <div style={{ fontSize: 12, color: '#9CA3AF' }}>{doctor.specialty}</div>
-                    <div style={{ fontSize: 11, color: '#8BAF7C', fontWeight: 600, marginTop: 2 }}>{doctor.rating} rating · {doctor.exp}</div>
+                    <div style={{ fontSize: 11, color: '#8BAF7C', fontWeight: 600, marginTop: 2 }}>{doctor.rating} rating Â· {doctor.exp}</div>
                   </div>
                 </div>
 
