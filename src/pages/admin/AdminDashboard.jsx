@@ -5,6 +5,7 @@ import {
   CalendarDays,
   ChevronRight,
   FileText,
+  MessageSquare,
   Sparkles,
   Users,
 } from 'lucide-react'
@@ -171,6 +172,10 @@ export default function AdminDashboard() {
                 <button className="btn btn-primary" onClick={() => navigate('/admin/patients')}>
                   <Users size={16} />
                   Open patient roster
+                </button>
+                <button className="btn btn-outline" onClick={() => navigate('/admin/messages')}>
+                  <MessageSquare size={16} />
+                  Open messages
                 </button>
                 <button className="btn btn-outline" onClick={() => navigate('/admin/appointments')}>
                   Open appointments

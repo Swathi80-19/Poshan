@@ -45,6 +45,23 @@ export default function AppLayout() {
           </div>
         </div>
 
+        <div className="workspace-rail member-rail">
+          <div className="workspace-rail-top">
+            <div>
+              <div className="workspace-kicker">Member workspace</div>
+              <h4>Daily careboard</h4>
+            </div>
+            <span className="badge badge-green">Live</span>
+          </div>
+          <p>
+            Meals, tracking, expert discovery, and messages now sit in one calmer operating surface.
+          </p>
+          <div className="workspace-chip-row">
+            <span className="workspace-chip">Tracker connected</span>
+            <span className="workspace-chip">Care plan active</span>
+          </div>
+        </div>
+
         <nav className="sidebar-nav">
           <div className="sidebar-section-title">Workspace</div>
           {navItems.map(({ icon: Icon, label, to, badge }) => (
@@ -93,7 +110,9 @@ export default function AppLayout() {
       </aside>
 
       <main className="main-content">
-        <Outlet />
+        <div className="content-shell member-shell">
+          <Outlet />
+        </div>
       </main>
     </div>
   )

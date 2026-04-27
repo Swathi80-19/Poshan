@@ -27,6 +27,7 @@ import AdminLayout from './components/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminPatients from './pages/admin/AdminPatients'
 import AdminAppointments from './pages/admin/AdminAppointments'
+import AdminMessages from './pages/admin/AdminMessages'
 import AdminPayments from './pages/admin/AdminPayments'
 import AdminReports from './pages/admin/AdminReports'
 import AdminProfile from './pages/admin/AdminProfile'
@@ -104,6 +105,7 @@ function App() {
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="patients" element={<AdminPatients />} />
           <Route path="appointments" element={<AdminAppointments />} />
+          <Route path="messages" element={<AdminMessages />} />
           <Route path="payments" element={<AdminPayments />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="profile" element={<AdminProfile />} />

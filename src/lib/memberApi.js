@@ -191,6 +191,38 @@ export function getNutritionistDashboard(token) {
   return request('/api/nutritionists/me/dashboard', { token })
 }
 
+export function getMemberConversations(token) {
+  return request('/api/messages/member', { token })
+}
+
+export function getMemberMessageThread(token, nutritionistId) {
+  return request(`/api/messages/member/${nutritionistId}`, { token })
+}
+
+export function sendMemberMessage(token, nutritionistId, payload) {
+  return request(`/api/messages/member/${nutritionistId}`, {
+    method: 'POST',
+    token,
+    body: payload,
+  })
+}
+
+export function getNutritionistConversations(token) {
+  return request('/api/messages/nutritionist', { token })
+}
+
+export function getNutritionistMessageThread(token, memberId) {
+  return request(`/api/messages/nutritionist/${memberId}`, { token })
+}
+
+export function sendNutritionistMessage(token, memberId, payload) {
+  return request(`/api/messages/nutritionist/${memberId}`, {
+    method: 'POST',
+    token,
+    body: payload,
+  })
+}
+
 export function getMemberProfile(token) {
   return request('/api/member/profile', { token })
 }

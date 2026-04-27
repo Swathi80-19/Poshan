@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
+  MessageSquare,
   CreditCard,
   BarChart2,
   Settings,
@@ -21,6 +22,7 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', to: '/admin/dashboard' },
   { icon: Users, label: 'Patients', to: '/admin/patients' },
   { icon: Calendar, label: 'Appointments', to: '/admin/appointments' },
+  { icon: MessageSquare, label: 'Messages', to: '/admin/messages' },
   { icon: CreditCard, label: 'Payments', to: '/admin/payments' },
   { icon: BarChart2, label: 'Reports', to: '/admin/reports' },
   { icon: Star, label: 'Profile', to: '/admin/profile' },
@@ -56,6 +58,23 @@ export default function AdminLayout() {
           <div>
             <div className="admin-logo-text">Poshan</div>
             <div className="admin-logo-tag">Nutritionist workspace</div>
+          </div>
+        </div>
+
+        <div className="workspace-rail admin-rail">
+          <div className="workspace-rail-top">
+            <div>
+              <div className="workspace-kicker">Clinical control</div>
+              <h4>{specialization}</h4>
+            </div>
+            <span className="badge badge-amber">Practice</span>
+          </div>
+          <p>
+            Member communication, bookings, reports, and shared logs are organized into a stronger clinical workspace.
+          </p>
+          <div className="workspace-chip-row">
+            <span className="workspace-chip">Synced roster</span>
+            <span className="workspace-chip">Secure records</span>
           </div>
         </div>
 
@@ -122,7 +141,9 @@ export default function AdminLayout() {
       </aside>
 
       <main className="admin-main">
-        <Outlet />
+        <div className="content-shell admin-shell">
+          <Outlet />
+        </div>
       </main>
     </div>
   )
