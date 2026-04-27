@@ -30,7 +30,7 @@ export default function AdminAppointments() {
 
     if (!session.accessToken) {
       setLoading(false)
-      setError('Sign in as a nutritionist to view your real appointments.')
+      setError('Sign in as a nutritionist to view your appointments.')
       return undefined
     }
 
@@ -63,7 +63,7 @@ export default function AdminAppointments() {
   const completedAppointments = appointments.filter((item) => item.status === 'COMPLETED')
   const upcomingAppointments = appointments.filter((item) => item.status === 'UPCOMING')
   const statCards = [
-    { label: 'Scheduled', value: appointments.length, foot: 'Real sessions for this nutritionist', tone: '#e7efe0', accent: '#73955f' },
+    { label: 'Scheduled', value: appointments.length, foot: 'Sessions on your account', tone: '#e7efe0', accent: '#73955f' },
     { label: 'Completed', value: completedAppointments.length, foot: 'Closed appointments', tone: '#e8f0fb', accent: '#4d82b7' },
     { label: 'Upcoming', value: upcomingAppointments.length, foot: 'Still to attend', tone: '#eee6fa', accent: '#7a61b8' },
     { label: 'Video calls', value: appointments.filter((item) => item.mode.includes('VIDEO')).length, foot: 'Remote consultations', tone: '#f8eccc', accent: '#c9953b' },
@@ -88,7 +88,7 @@ export default function AdminAppointments() {
         </div>
 
         <div className="page-header-right">
-          <span className="badge badge-green">{appointments.length} live sessions</span>
+          <span className="badge badge-green">{appointments.length} scheduled sessions</span>
           <button className="icon-btn">
             <Bell size={18} />
           </button>
@@ -101,17 +101,16 @@ export default function AdminAppointments() {
             <div>
               <div className="eyebrow">Session board</div>
               <h2 className="hero-heading" style={{ marginTop: '0.55rem' }}>
-                Appointment data now comes from real member bookings instead of the old schedule demo.
+                Keep your consultation calendar clear, organized, and easy to scan.
               </h2>
               <p className="hero-copy">
-                Every session shown here is pulled from the backend for the signed-in nutritionist account, including
-                member names, dates, time labels, modes, and status.
+                Review booked sessions by date, track upcoming visits, and keep completed consultations within reach.
               </p>
 
               <div className="pill-row">
                 <span className="badge badge-green">{completedAppointments.length} completed</span>
                 <span className="badge badge-amber">{upcomingAppointments.length} upcoming</span>
-                <span className="badge badge-sky">Live backend schedule</span>
+                <span className="badge badge-sky">Schedule view</span>
               </div>
             </div>
 
@@ -119,7 +118,7 @@ export default function AdminAppointments() {
               <div className="dashboard-panel-heading">
                 <div>
                   <h3>Today&apos;s pace</h3>
-                  <p>Real queue state from booked appointments</p>
+                  <p>Quick view of the day&apos;s consultation flow</p>
                 </div>
                 <Clock3 size={18} color="#73955f" />
               </div>
@@ -165,7 +164,7 @@ export default function AdminAppointments() {
             <div className="dashboard-panel-heading">
               <div>
                 <h3>Appointment list</h3>
-                <p>Grouped from the backend by scheduled date</p>
+                <p>Grouped by scheduled date</p>
               </div>
             </div>
 
@@ -180,7 +179,7 @@ export default function AdminAppointments() {
                       </div>
                       <div>
                         <div className="signal-title">{appointment.memberName}</div>
-                        <div className="signal-sub">{appointment.timeLabel} · {appointment.mode.replaceAll('_', ' ')}</div>
+                        <div className="signal-sub">{appointment.timeLabel} | {appointment.mode.replaceAll('_', ' ')}</div>
                       </div>
                       <div className="signal-meta">{appointment.status.toLowerCase()}</div>
                     </div>
@@ -240,7 +239,7 @@ export default function AdminAppointments() {
                     </div>
                     <div>
                       <div className="signal-title">{appointment.memberName}</div>
-                      <div className="signal-sub">{appointment.dateLabel} · {appointment.timeLabel}</div>
+                      <div className="signal-sub">{appointment.dateLabel} | {appointment.timeLabel}</div>
                     </div>
                     <CheckCircle2 size={16} color="#2f8d58" />
                   </div>

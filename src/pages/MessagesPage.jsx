@@ -213,15 +213,15 @@ export default function MessagesPage() {
         >
           <div className="dashboard-panel-heading" style={{ alignItems: 'flex-start' }}>
             <div>
-              <div className="eyebrow">Shared care thread</div>
-              <h3 style={{ marginTop: 8 }}>Your chat now follows the real nutritionist account you booked.</h3>
+              <div className="eyebrow">Care conversations</div>
+              <h3 style={{ marginTop: 8 }}>Stay connected with your nutritionist before and after each session.</h3>
               <p style={{ color: '#6f7867', marginTop: 8, maxWidth: 720 }}>
-                Messages are stored in the backend, so both you and your nutritionist see the same conversation history.
+                Use this space to ask questions, share updates, and keep your consultation history in one place.
               </p>
             </div>
             <div className="pill-row">
               <span className="badge badge-green">{conversations.length} total threads</span>
-              <span className="badge badge-gray">Synced messages</span>
+              <span className="badge badge-gray">Shared history</span>
             </div>
           </div>
         </section>
@@ -234,11 +234,11 @@ export default function MessagesPage() {
             </div>
 
             <div style={{ marginTop: 14, overflowY: 'auto', flex: 1 }}>
-              {loading ? <div className="admin-note">Loading real conversations...</div> : null}
+              {loading ? <div className="admin-note">Loading conversations...</div> : null}
               {error ? <div className="admin-note">{error}</div> : null}
               {!loading && !error && !filtered.length ? (
                 <div className="admin-note">
-                  Messages appear after you book a real nutritionist appointment.
+                  Messages appear after you book an appointment.
                 </div>
               ) : null}
 
@@ -288,19 +288,19 @@ export default function MessagesPage() {
                 <div className="queue-title">{thread?.counterpartName || activeConversation?.counterpartName || 'No conversation selected'}</div>
                 <div className="queue-sub">
                   {thread?.appointmentLabel
-                    ? `Consult window: ${thread.appointmentLabel}`
+                    ? `Consultation: ${thread.appointmentLabel}`
                     : 'Book an appointment to start messaging'}
                 </div>
               </div>
               <div style={{ flex: 1 }} />
-              {thread?.active ? <span className="badge badge-green">Shared live thread</span> : <span className="badge badge-gray">No active booking</span>}
+              {thread?.active ? <span className="badge badge-green">Active chat</span> : <span className="badge badge-gray">No active booking</span>}
               <button className="header-icon-btn" onClick={() => navigate('/app/activity')}><Calendar size={16} /></button>
             </div>
 
             <div className="messages-thread-body" style={{ flex: 1, overflowY: 'auto', padding: '22px 24px', background: 'rgba(246,240,229,0.45)' }}>
               {threadLoading ? <div className="admin-note">Loading thread...</div> : null}
               {!threadLoading && !thread ? (
-                <div className="admin-note">No real nutritionist conversation is available yet.</div>
+                <div className="admin-note">No conversation is available yet.</div>
               ) : null}
 
               {!threadLoading && thread && !thread.messages.length ? (
@@ -370,7 +370,7 @@ export default function MessagesPage() {
               <div style={{ padding: 18, borderTop: '1px solid rgba(92,120,74,0.08)' }}>
                 <div className="auth-note">
                   <Lock size={16} />
-                  <span>Chat opens only after you have a real upcoming appointment with a registered nutritionist.</span>
+                  <span>Chat opens after you have an upcoming appointment.</span>
                 </div>
                 <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => navigate('/app/search')}>
                   Book appointment

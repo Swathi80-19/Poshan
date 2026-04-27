@@ -1,110 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
-  BarChart2,
   Check,
   Download,
   FileText,
   Plus,
   Save,
-  Star,
   TrendingUp,
   Users,
   X,
 } from 'lucide-react'
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  PolarAngleAxis,
-  PolarGrid,
-  Radar,
-  RadarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-
-const outcomeData = [
-  { category: 'Weight loss', success: 88 },
-  { category: 'Diabetes care', success: 92 },
-  { category: 'PCOS', success: 85 },
-  { category: 'Muscle gain', success: 78 },
-  { category: 'Heart health', success: 94 },
-  { category: 'Gut health', success: 80 },
-]
-
-const radarData = [
-  { metric: 'Adherence', score: 85 },
-  { metric: 'Progress', score: 78 },
-  { metric: 'Retention', score: 92 },
-  { metric: 'Rating', score: 98 },
-  { metric: 'Response', score: 88 },
-  { metric: 'Goals met', score: 80 },
-]
-
-const patientGrowth = [
-  { month: 'Aug', patients: 28 },
-  { month: 'Sep', patients: 35 },
-  { month: 'Oct', patients: 31 },
-  { month: 'Nov', patients: 44 },
-  { month: 'Dec', patients: 39 },
-  { month: 'Jan', patients: 52 },
-  { month: 'Feb', patients: 48 },
-]
-
-const initialReports = [
-  {
-    id: 1,
-    name: 'Rekha Sharma',
-    goal: 'Weight loss',
-    sessions: 8,
-    completion: 72,
-    bmiChange: '-2.1',
-    lastNote: 'Patient is responding well to a lower-carb meal pattern.',
-    date: '2026-02-20',
-    goalsMet: ['Diet adherence', 'Weight target'],
-    recommendations: 'Keep the current meal plan. Add 30 minutes of walking daily.',
-  },
-  {
-    id: 2,
-    name: 'Krishna Murthy',
-    goal: 'Muscle gain',
-    sessions: 5,
-    completion: 45,
-    bmiChange: '+0.8',
-    lastNote: 'Protein intake improved, but total calories still need attention.',
-    date: '2026-02-18',
-    goalsMet: ['Protein intake'],
-    recommendations: 'Raise total intake and pair it with resistance training.',
-  },
-  {
-    id: 3,
-    name: 'Priya Verma',
-    goal: 'PCOS management',
-    sessions: 12,
-    completion: 91,
-    bmiChange: '-1.5',
-    lastNote: 'Excellent consistency. Energy and hormonal markers are improving.',
-    date: '2026-02-25',
-    goalsMet: ['Diet adherence', 'Weight target', 'Lab values', 'Energy levels'],
-    recommendations: 'Maintain the current plan and schedule labs again in six weeks.',
-  },
-  {
-    id: 4,
-    name: 'Arjun Reddy',
-    goal: 'Diabetes control',
-    sessions: 3,
-    completion: 20,
-    bmiChange: '-0.3',
-    lastNote: 'Carb adjustments started, but logging is still inconsistent.',
-    date: '2026-02-15',
-    goalsMet: ['Diet adherence'],
-    recommendations: 'Monitor carb intake closely and review again in two weeks.',
-  },
-]
+import { getNutritionistPatients } from '../../lib/memberApi'
+import { getNutritionistReports, saveNutritionistReport } from '../../lib/adminData'
+import { getNutritionistSession } from '../../lib/session'
 
 const goalOptions = [
   'Diet adherence',
@@ -117,21 +24,15 @@ const goalOptions = [
   'Stress management',
 ]
 
-const statCards = [
-  { label: 'Average success rate', value: '86%', foot: 'Across active programs', tone: '#f8eccc', accent: '#c9953b', icon: Star },
-  { label: 'Patient retention', value: '92%', foot: 'Members continuing plans', tone: '#e7efe0', accent: '#73955f', icon: Users },
-  { label: 'Average goal time', value: '3.2 mo', foot: 'Typical plan completion window', tone: '#e8f0fb', accent: '#4d82b7', icon: TrendingUp },
-  { label: 'Reports generated', value: `${initialReports.length}`, foot: 'Current clinic documents', tone: '#eee6fa', accent: '#7a61b8', icon: FileText },
-]
+function formatDate(value) {
+  if (!value) return 'Not scheduled'
 
-const tooltipContent = ({ active, payload, label }) => (
-  active && payload?.length ? (
-    <div className="admin-chart-tooltip">
-      <div>{label}</div>
-      <div><strong>{payload[0]?.value}</strong> patients</div>
-    </div>
-  ) : null
-)
+  return new Intl.DateTimeFormat('en-IN', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(value))
+}
 
 function CreateReportModal({ onClose, onSave }) {
   const [form, setForm] = useState({
@@ -147,6 +48,7 @@ function CreateReportModal({ onClose, onSave }) {
   })
 
   const updateField = (key, value) => setForm((current) => ({ ...current, [key]: value }))
+
   const toggleGoal = (goal) => {
     setForm((current) => ({
       ...current,
@@ -157,8 +59,20 @@ function CreateReportModal({ onClose, onSave }) {
   }
 
   const handleSave = () => {
-    if (!form.name || !form.goal || !form.lastNote) return
-    onSave({ ...form, id: Date.now() })
+    if (!form.name.trim() || !form.goal.trim() || !form.lastNote.trim()) {
+      return
+    }
+
+    onSave({
+      ...form,
+      name: form.name.trim(),
+      goal: form.goal.trim(),
+      sessions: Number(form.sessions) || 0,
+      bmiChange: form.bmiChange.trim(),
+      lastNote: form.lastNote.trim(),
+      recommendations: form.recommendations.trim(),
+      id: `report-${Date.now()}`,
+    })
   }
 
   return (
@@ -167,7 +81,7 @@ function CreateReportModal({ onClose, onSave }) {
         <div className="admin-modal-header">
           <div>
             <h3>Create patient report</h3>
-            <p>Document session context, progress, and next-step guidance.</p>
+            <p>Document progress, session context, and next-step guidance.</p>
           </div>
           <button className="icon-btn" onClick={onClose}>
             <X size={16} />
@@ -197,16 +111,12 @@ function CreateReportModal({ onClose, onSave }) {
 
           <label>
             <span className="form-label">Goal</span>
-            <select
+            <input
               className="form-input"
               value={form.goal}
               onChange={(event) => updateField('goal', event.target.value)}
-            >
-              <option value="">Select goal</option>
-              {['Weight loss', 'Muscle gain', 'Diabetes care', 'PCOS management', 'Heart health', 'Gut health', 'General wellness'].map((goal) => (
-                <option key={goal} value={goal}>{goal}</option>
-              ))}
-            </select>
+              placeholder="Primary care goal"
+            />
           </label>
 
           <label>
@@ -214,10 +124,10 @@ function CreateReportModal({ onClose, onSave }) {
             <input
               className="form-input"
               type="number"
-              min="1"
+              min="0"
               value={form.sessions}
               onChange={(event) => updateField('sessions', event.target.value)}
-              placeholder="e.g. 5"
+              placeholder="0"
             />
           </label>
 
@@ -247,6 +157,7 @@ function CreateReportModal({ onClose, onSave }) {
           {goalOptions.map((goal) => (
             <button
               key={goal}
+              type="button"
               className={`filter-tab ${form.goalsMet.includes(goal) ? 'active' : ''}`}
               onClick={() => toggleGoal(goal)}
             >
@@ -262,7 +173,7 @@ function CreateReportModal({ onClose, onSave }) {
             className="form-input tracker-textarea"
             value={form.lastNote}
             onChange={(event) => updateField('lastNote', event.target.value)}
-            placeholder="Document patient progress, adjustments, and concerns."
+            placeholder="Document progress, concerns, or plan adjustments."
           />
         </label>
 
@@ -272,7 +183,7 @@ function CreateReportModal({ onClose, onSave }) {
             className="form-input tracker-textarea"
             value={form.recommendations}
             onChange={(event) => updateField('recommendations', event.target.value)}
-            placeholder="Add next-step guidance and follow-up actions."
+            placeholder="Add guidance for the next phase of care."
           />
         </label>
 
@@ -289,14 +200,84 @@ function CreateReportModal({ onClose, onSave }) {
 }
 
 export default function AdminReports() {
-  const [reports, setReports] = useState(initialReports)
+  const session = getNutritionistSession()
+  const [reports, setReports] = useState([])
+  const [patients, setPatients] = useState([])
+  const [loadingPatients, setLoadingPatients] = useState(true)
+  const [patientError, setPatientError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
 
+  useEffect(() => {
+    setReports(getNutritionistReports())
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!session.accessToken) {
+      setLoadingPatients(false)
+      return undefined
+    }
+
+    ;(async () => {
+      try {
+        setLoadingPatients(true)
+        setPatientError('')
+        const response = await getNutritionistPatients(session.accessToken)
+
+        if (!cancelled) {
+          setPatients(Array.isArray(response) ? response : [])
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setPatients([])
+          setPatientError(requestError.message || 'Unable to load patient details right now.')
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingPatients(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [session.accessToken])
+
   const handleSave = (report) => {
-    setReports((current) => [report, ...current])
+    const saved = saveNutritionistReport(report)
+    setReports((current) => [saved, ...current.filter((item) => item.id !== saved.id)])
     setShowModal(false)
   }
+
+  const averageCompletion = reports.length
+    ? Math.round(reports.reduce((sum, item) => sum + (Number(item.completion) || 0), 0) / reports.length)
+    : 0
+
+  const uniquePatients = new Set(reports.map((item) => item.name.trim().toLowerCase()).filter(Boolean)).size
+  const latestReport = reports[0]
+
+  const goalBreakdown = useMemo(() => {
+    const counts = reports.reduce((map, report) => {
+      const key = report.goal || 'General care'
+      map.set(key, (map.get(key) || 0) + 1)
+      return map
+    }, new Map())
+
+    return [...counts.entries()]
+      .map(([goal, count]) => ({ goal, count }))
+      .sort((left, right) => right.count - left.count)
+      .slice(0, 5)
+  }, [reports])
+
+  const statCards = [
+    { label: 'Saved reports', value: reports.length, foot: 'Reports created in this workspace', tone: '#eee6fa', accent: '#7a61b8', icon: FileText },
+    { label: 'Tracked patients', value: patients.length, foot: 'Members currently connected to your practice', tone: '#e7efe0', accent: '#73955f', icon: Users },
+    { label: 'Avg completion', value: `${averageCompletion}%`, foot: 'Across saved reports', tone: '#e8f0fb', accent: '#4d82b7', icon: TrendingUp },
+    { label: 'Patients documented', value: uniquePatients, foot: 'Unique people with saved reports', tone: '#f8eccc', accent: '#c9953b', icon: FileText },
+  ]
 
   return (
     <div className="animate-fade">
@@ -304,7 +285,7 @@ export default function AdminReports() {
 
       <div className="admin-page-header">
         <div>
-          <div className="page-header-greeting">Practice analytics</div>
+          <div className="page-header-greeting">Clinical documentation</div>
           <h1>Reports</h1>
         </div>
 
@@ -321,6 +302,53 @@ export default function AdminReports() {
       </div>
 
       <div className="page-body admin-page-stack">
+        <section className="admin-hero">
+          <div className="admin-hero-grid">
+            <div>
+              <div className="eyebrow">Report workspace</div>
+              <h2 className="hero-heading" style={{ marginTop: '0.55rem' }}>
+                Capture patient progress, clinical notes, and next-step guidance in a clear format.
+              </h2>
+              <p className="hero-copy">
+                Use reports to keep follow-up organized, document care outcomes, and maintain a readable history for each member.
+              </p>
+
+              <div className="pill-row">
+                <span className="badge badge-green">{reports.length} saved reports</span>
+                <span className="badge badge-amber">{patients.length} connected patients</span>
+                <span className="badge badge-sky">{latestReport ? `Latest: ${formatDate(latestReport.date)}` : 'No reports yet'}</span>
+              </div>
+            </div>
+
+            <div className="focus-card">
+              <div className="dashboard-panel-heading">
+                <div>
+                  <h3>Documentation status</h3>
+                  <p>Keep report writing active as consultations progress.</p>
+                </div>
+                <FileText size={18} color="#73955f" />
+              </div>
+
+              <div className="mini-metric-grid">
+                <div className="mini-metric">
+                  <strong>{averageCompletion}%</strong>
+                  <span>average plan completion</span>
+                </div>
+                <div className="mini-metric">
+                  <strong>{uniquePatients}</strong>
+                  <span>patients documented</span>
+                </div>
+              </div>
+
+              <div className="admin-note" style={{ marginTop: '1rem' }}>
+                {latestReport
+                  ? `Most recent report saved for ${latestReport.name} on ${formatDate(latestReport.date)}.`
+                  : 'Create your first report to start documenting patient progress.'}
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="summary-grid">
           {statCards.map(({ label, value, foot, tone, accent, icon: Icon }) => (
             <article key={label} className="metric-card">
@@ -328,108 +356,76 @@ export default function AdminReports() {
                 <div className="metric-card-icon" style={{ background: tone }}>
                   <Icon size={18} color={accent} />
                 </div>
-                <span style={{ color: accent, fontWeight: 800, fontSize: '0.78rem' }}>Insight</span>
+                <span style={{ color: accent, fontWeight: 800, fontSize: '0.78rem' }}>Reports</span>
               </div>
-              <div className="metric-card-value">{label === 'Reports generated' ? reports.length : value}</div>
+              <div className="metric-card-value">{value}</div>
               <div className="metric-card-label">{label}</div>
               <div className="metric-card-foot" style={{ color: accent }}>{foot}</div>
             </article>
           ))}
         </section>
 
-        <div className="g-2">
-          <section className="support-card">
-            <div className="dashboard-panel-heading">
-              <div>
-                <h3>Treatment outcomes</h3>
-                <p>Current success rate by care area</p>
-              </div>
-            </div>
-
-            <div className="admin-outcome-list">
-              {outcomeData.map((item) => (
-                <div key={item.category}>
-                  <div className="admin-outcome-row">
-                    <span>{item.category}</span>
-                    <strong>{item.success}%</strong>
-                  </div>
-                  <div className="progress-bar-wrap">
-                    <div className="progress-bar-fill" style={{ width: `${item.success}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="focus-card">
-            <div className="dashboard-panel-heading">
-              <div>
-                <h3>Patient growth</h3>
-                <p>Monthly growth in the active member base</p>
-              </div>
-              <span className="badge badge-green">+71% since Aug</span>
-            </div>
-
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={patientGrowth}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1ede6" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#9ca38f' }} />
-                <YAxis hide />
-                <Tooltip content={tooltipContent} />
-                <Line
-                  type="monotone"
-                  dataKey="patients"
-                  stroke="#73955f"
-                  strokeWidth={2.5}
-                  dot={{ fill: '#73955f', r: 4, strokeWidth: 0 }}
-                  activeDot={{ r: 6, fill: '#5c784a', stroke: '#fff', strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </section>
-        </div>
+        {loadingPatients ? <div className="admin-note">Loading patient context...</div> : null}
+        {patientError ? <div className="admin-note">{patientError}</div> : null}
 
         <div className="g-2">
           <section className="support-card">
             <div className="dashboard-panel-heading">
               <div>
-                <h3>Practice quality</h3>
-                <p>Six dimensions of care performance</p>
+                <h3>Goal coverage</h3>
+                <p>Which care goals appear most often across saved reports.</p>
               </div>
-              <BarChart2 size={18} color="#73955f" />
             </div>
 
-            <ResponsiveContainer width="100%" height={230}>
-              <RadarChart data={radarData}>
-                <PolarGrid stroke="#ebe6dc" />
-                <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: '#8b907f' }} />
-                <Radar dataKey="score" stroke="#73955f" fill="#73955f" fillOpacity={0.16} strokeWidth={2} />
-              </RadarChart>
-            </ResponsiveContainer>
+            {!goalBreakdown.length ? (
+              <div className="admin-note">Goal coverage will appear after reports are added.</div>
+            ) : (
+              <div className="admin-outcome-list">
+                {goalBreakdown.map((item) => {
+                  const width = Math.max((item.count / reports.length) * 100, 12)
+
+                  return (
+                    <div key={item.goal}>
+                      <div className="admin-outcome-row">
+                        <span>{item.goal}</span>
+                        <strong>{item.count}</strong>
+                      </div>
+                      <div className="progress-bar-wrap">
+                        <div className="progress-bar-fill" style={{ width: `${width}%` }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </section>
 
           <section className="support-card">
             <div className="dashboard-panel-heading">
               <div>
-                <h3>Monthly outcome mix</h3>
-                <p>Another quick view of outcome distribution</p>
+                <h3>Connected patients</h3>
+                <p>Members currently visible in your practice roster.</p>
               </div>
             </div>
 
-            <ResponsiveContainer width="100%" height={230}>
-              <BarChart data={outcomeData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1ede6" vertical={false} />
-                <XAxis dataKey="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#9ca38f' }} />
-                <YAxis hide />
-                <Tooltip content={({ active, payload }) => active && payload?.length ? (
-                  <div className="admin-chart-tooltip">
-                    <div><strong>{payload[0]?.payload?.category}</strong></div>
-                    <div>{payload[0]?.value}% success</div>
+            {!patients.length ? (
+              <div className="admin-note">Patients will appear here once members book appointments and share activity.</div>
+            ) : (
+              <div className="signal-list">
+                {patients.slice(0, 5).map((patient) => (
+                  <div key={patient.memberId || patient.id} className="signal-item">
+                    <div className="signal-avatar" style={{ background: 'rgba(115, 149, 95, 0.12)' }}>
+                      {patient.name?.charAt(0)?.toUpperCase() || 'M'}
+                    </div>
+                    <div>
+                      <div className="signal-title">{patient.name}</div>
+                      <div className="signal-sub">{patient.goalFocus || patient.goal || 'Goal not set'}</div>
+                    </div>
+                    <div className="signal-meta">{patient.sessions || 0} sessions</div>
                   </div>
-                ) : null} />
-                <Bar dataKey="success" fill="#c9953b" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 
@@ -438,7 +434,7 @@ export default function AdminReports() {
             <div>
               <h3 style={{ marginBottom: '0.2rem' }}>Patient reports</h3>
               <p style={{ color: '#8b907f', fontSize: '0.84rem' }}>
-                Expand a report to read goals met and recommendations.
+                Expand a report to review notes, outcomes, and recommendations.
               </p>
             </div>
 
@@ -448,58 +444,62 @@ export default function AdminReports() {
             </button>
           </div>
 
-          <div className="admin-report-list">
-            {reports.map((report) => {
-              const isExpanded = expandedId === report.id
+          {!reports.length ? (
+            <div className="admin-note">No reports have been created yet.</div>
+          ) : (
+            <div className="admin-report-list">
+              {reports.map((report) => {
+                const isExpanded = expandedId === report.id
 
-              return (
-                <article key={report.id} className={`admin-report-item ${isExpanded ? 'expanded' : ''}`}>
-                  <button
-                    className="admin-report-row"
-                    onClick={() => setExpandedId(isExpanded ? null : report.id)}
-                  >
-                    <div>
-                      <div className="admin-table-title">{report.name}</div>
-                      <div className="admin-table-sub">{report.goal}</div>
-                    </div>
-                    <div className="admin-report-progress">
-                      <div className="progress-bar-wrap">
-                        <div className="progress-bar-fill" style={{ width: `${report.completion}%` }} />
+                return (
+                  <article key={report.id} className={`admin-report-item ${isExpanded ? 'expanded' : ''}`}>
+                    <button
+                      className="admin-report-row"
+                      onClick={() => setExpandedId(isExpanded ? null : report.id)}
+                    >
+                      <div>
+                        <div className="admin-table-title">{report.name}</div>
+                        <div className="admin-table-sub">{report.goal}</div>
                       </div>
-                      <span>{report.completion}%</span>
-                    </div>
-                    <div className="admin-report-meta">
-                      <strong>{report.bmiChange}</strong>
-                      <span>BMI change</span>
-                    </div>
-                    <div className="admin-table-sub">{report.date}</div>
-                    <div className="badge badge-green">{report.goalsMet.length} goals met</div>
-                  </button>
+                      <div className="admin-report-progress">
+                        <div className="progress-bar-wrap">
+                          <div className="progress-bar-fill" style={{ width: `${report.completion}%` }} />
+                        </div>
+                        <span>{report.completion}%</span>
+                      </div>
+                      <div className="admin-report-meta">
+                        <strong>{report.bmiChange || '--'}</strong>
+                        <span>BMI change</span>
+                      </div>
+                      <div className="admin-table-sub">{formatDate(report.date)}</div>
+                      <div className="badge badge-green">{report.goalsMet.length} goals met</div>
+                    </button>
 
-                  {isExpanded ? (
-                    <div className="admin-report-body">
-                      <div>
-                        <h4>Clinical note</h4>
-                        <p>{report.lastNote}</p>
-                      </div>
-                      <div>
-                        <h4>Goals met</h4>
-                        <div className="pill-row">
-                          {report.goalsMet.map((goal) => (
-                            <span key={goal} className="badge badge-green">{goal}</span>
-                          ))}
+                    {isExpanded ? (
+                      <div className="admin-report-body">
+                        <div>
+                          <h4>Clinical note</h4>
+                          <p>{report.lastNote}</p>
+                        </div>
+                        <div>
+                          <h4>Goals met</h4>
+                          <div className="pill-row">
+                            {report.goalsMet.length ? report.goalsMet.map((goal) => (
+                              <span key={goal} className="badge badge-green">{goal}</span>
+                            )) : <span className="badge badge-gray">No goals marked yet</span>}
+                          </div>
+                        </div>
+                        <div>
+                          <h4>Recommendations</h4>
+                          <p>{report.recommendations || 'No recommendations added yet.'}</p>
                         </div>
                       </div>
-                      <div>
-                        <h4>Recommendations</h4>
-                        <p>{report.recommendations}</p>
-                      </div>
-                    </div>
-                  ) : null}
-                </article>
-              )
-            })}
-          </div>
+                    ) : null}
+                  </article>
+                )
+              })}
+            </div>
+          )}
         </section>
       </div>
     </div>

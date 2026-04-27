@@ -58,15 +58,15 @@ export default function AdminLoginPage() {
             </div>
           </div>
 
-          <h1 className="auth-heading">Sign into the real clinical workspace.</h1>
+          <h1 className="auth-heading">Sign into your clinical workspace.</h1>
           <p className="auth-copy">
-            The nutritionist portal now uses backend authentication, so dashboard, patients, and appointments follow the actual registered account.
+            Access your dashboard, member messages, patient roster, and appointment schedule from one secure portal.
           </p>
 
           <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
-            <li><span className="feature-dot">•</span><span>Uses the same backend auth flow as the member workspace.</span></li>
-            <li><span className="feature-dot">•</span><span>Shows only patients and appointments tied to the logged-in nutritionist.</span></li>
-            <li><span className="feature-dot">•</span><span>Removes the old local demo sign-in shortcut.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Review upcoming appointments and completed consultations.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Stay in touch with members through your inbox.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Manage your patient roster and follow-up work in one place.</span></li>
           </ul>
         </div>
       </section>
@@ -87,7 +87,7 @@ export default function AdminLoginPage() {
             </div>
           </div>
 
-          <p className="auth-copy">Sign in to your clinical workspace and continue your patient review flow.</p>
+          <p className="auth-copy">Sign in to continue managing appointments, members, and care conversations.</p>
 
           <form onSubmit={handleSubmit}>
             <div className="form-group">
@@ -149,7 +149,7 @@ export default function AdminLoginPage() {
 
             {error ? (
               <div className="auth-note" style={{ marginBottom: '1.2rem', color: '#bf5f47' }}>
-                <span className="feature-dot">•</span>
+                <span className="feature-dot">&bull;</span>
                 <span>{error}</span>
               </div>
             ) : null}

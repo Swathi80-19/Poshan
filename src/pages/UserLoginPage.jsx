@@ -92,7 +92,7 @@ export default function UserLoginPage() {
 
           <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
             <span className="feature-dot">&bull;</span>
-            <span>Your member workspace opens from your own login session without demo shortcuts.</span>
+            <span>Your dashboard opens with your saved progress, consultations, and daily logs.</span>
           </div>
 
           <form onSubmit={handleSubmit}>

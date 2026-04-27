@@ -67,7 +67,7 @@ const workflowSteps = [
 ]
 
 const trackedItems = ['Meals', 'Hydration', 'Activity', 'Weight', 'Sleep', 'Progress']
-const ctaNotes = ['Member login', 'Nutritionist login', 'Guided entry']
+const ctaNotes = ['Member access', 'Nutritionist access', 'Care tools']
 
 export default function SplashPage() {
   const navigate = useNavigate()
@@ -142,13 +142,13 @@ export default function SplashPage() {
               </div>
             </div>
 
-            <div className="landing-poster-kicker landing-poster-seq landing-poster-seq-1">Structured healthcare tracking</div>
+            <div className="landing-poster-kicker landing-poster-seq landing-poster-seq-1">Personal nutrition support</div>
             <h1 className="landing-poster-title landing-poster-seq landing-poster-seq-2">
               Healthcare works better when the daily story is clear enough to act on.
             </h1>
             <p className="landing-poster-copytext landing-poster-seq landing-poster-seq-3">
-              Poshan brings daily logging, pattern review, and nutrition follow-through into one structured
-              flow so people and care teams can work from the same record.
+              Poshan brings daily logging, expert guidance, and nutrition follow-through into one clear experience
+              so members and nutritionists can stay aligned.
             </p>
 
             <p className="landing-poster-note landing-poster-seq landing-poster-seq-4">
@@ -199,7 +199,7 @@ export default function SplashPage() {
       <section className="landing-shell landing-workflow-section">
         <div className="landing-workflow-intro">
           <p className="landing-structure-support">
-            As the page scrolls, the left side keeps the processing view visible while the right side explains each stage.
+            As the page scrolls, the left side keeps an app snapshot visible while the right side highlights what Poshan helps you manage.
           </p>
         </div>
 
@@ -207,8 +207,8 @@ export default function SplashPage() {
           <div className="landing-workflow-panel-wrap">
             <div className="landing-workflow-panel" aria-hidden="true">
               <div className="landing-workflow-panel-head">
-                <span>Processing UI</span>
-                <strong>Poshan operating sequence</strong>
+                <span>Care view</span>
+                <strong>Poshan experience</strong>
               </div>
 
               <div className="landing-workflow-console">
@@ -227,7 +227,7 @@ export default function SplashPage() {
 
               <div className="landing-workflow-panel-foot">
                 <span>Result</span>
-                <strong>Daily record ready for the correct login path</strong>
+                <strong>Your next care step is ready</strong>
               </div>
             </div>
           </div>

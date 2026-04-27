@@ -70,10 +70,10 @@ export default function AdminLayout() {
             <span className="badge badge-amber">Practice</span>
           </div>
           <p>
-            Member communication, bookings, reports, and shared logs are organized into a stronger clinical workspace.
+            Member communication, appointments, reports, and profile management stay together in one practice hub.
           </p>
           <div className="workspace-chip-row">
-            <span className="workspace-chip">Synced roster</span>
+            <span className="workspace-chip">Member roster</span>
             <span className="workspace-chip">Secure records</span>
           </div>
         </div>
@@ -124,8 +124,7 @@ export default function AdminLayout() {
             <div className="eyebrow" style={{ marginBottom: '0.35rem' }}>Careboard</div>
             <h4>Calm clinic flow</h4>
             <p>
-              Your practice pages now follow the same Poshan rhythm as the member workspace,
-              with faster scanning for sessions, patients, payments, and reports.
+              Keep sessions, patients, payments, and reports easy to review throughout the day.
             </p>
           </div>
 

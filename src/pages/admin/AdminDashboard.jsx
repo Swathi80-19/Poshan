@@ -48,7 +48,7 @@ export default function AdminDashboard() {
 
     if (!session.accessToken) {
       setLoading(false)
-      setError('Sign in as a nutritionist to view your real workspace.')
+      setError('Sign in as a nutritionist to view your dashboard.')
       return undefined
     }
 
@@ -133,11 +133,11 @@ export default function AdminDashboard() {
       <div className="admin-page-header">
         <div>
           <div className="page-header-greeting">Clinical overview</div>
-          <h1>{displayName}&rsquo;s dashboard</h1>
+          <h1>{displayName}'s dashboard</h1>
         </div>
 
         <div className="page-header-right">
-          <span className="badge badge-green">Live backend data</span>
+          <span className="badge badge-green">Practice overview</span>
           <button className="btn btn-primary" onClick={() => navigate('/admin/appointments')}>
             <CalendarDays size={16} />
             Today&apos;s schedule
@@ -155,11 +155,10 @@ export default function AdminDashboard() {
             <div>
               <div className="eyebrow">Practice command center</div>
               <h2 className="hero-heading" style={{ marginTop: '0.55rem' }}>
-                Your nutritionist workspace now reflects real registered patients, appointments, and shared tracker activity.
+                Keep your practice organized with patients, appointments, reports, and member updates in one place.
               </h2>
               <p className="hero-copy">
-                Demo dashboard cards have been replaced with backend-driven totals. As members book you and log their data,
-                this view updates from the actual saved records.
+                Review your schedule, monitor member activity, and stay on top of follow-up work from a single dashboard.
               </p>
 
               <div className="pill-row">
@@ -187,7 +186,7 @@ export default function AdminDashboard() {
               <div className="dashboard-panel-heading">
                 <div>
                   <h3>Appointment load</h3>
-                  <p>Real sessions grouped from your backend schedule</p>
+                  <p>Sessions grouped from your appointment schedule</p>
                 </div>
                 <span className="badge badge-green">{appointments.length} total</span>
               </div>
@@ -209,7 +208,7 @@ export default function AdminDashboard() {
                 </ResponsiveContainer>
               ) : (
                 <div className="admin-note" style={{ marginTop: '1rem' }}>
-                  No booked appointments yet. Once members book this nutritionist account, your schedule appears here.
+                  No appointments are booked yet. Your schedule will appear here once members start booking sessions.
                 </div>
               )}
             </div>
@@ -223,7 +222,7 @@ export default function AdminDashboard() {
                 <div className="metric-card-icon" style={{ background: tone }}>
                   <Icon size={19} color={accent} />
                 </div>
-                <span style={{ color: accent, fontWeight: 800, fontSize: '0.78rem' }}>Live</span>
+                <span style={{ color: accent, fontWeight: 800, fontSize: '0.78rem' }}>Overview</span>
               </div>
               <div className="metric-card-value">{value}</div>
               <div className="metric-card-label">{label}</div>
@@ -237,7 +236,7 @@ export default function AdminDashboard() {
             <div className="dashboard-panel-heading">
               <div>
                 <h3>Upcoming queue</h3>
-                <p>Real member sessions linked to this nutritionist account</p>
+                <p>Upcoming consultations on your schedule</p>
               </div>
             </div>
 
@@ -247,7 +246,7 @@ export default function AdminDashboard() {
                   <div className="queue-time">{item.timeLabel}</div>
                   <div>
                     <div className="queue-title">{item.memberName}</div>
-                    <div className="queue-sub">{item.dateLabel} · {item.mode.replaceAll('_', ' ')}</div>
+                    <div className="queue-sub">{item.dateLabel} | {item.mode.replaceAll('_', ' ')}</div>
                   </div>
                   <div className="queue-meta">{item.status.toLowerCase()}</div>
                 </div>
@@ -278,7 +277,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <div className="signal-title">{item.name}</div>
-                    <div className="signal-sub">{item.goalFocus || 'Goal not set'} · {item.sessions} sessions</div>
+                    <div className="signal-sub">{item.goalFocus || 'Goal not set'} | {item.sessions} sessions</div>
                   </div>
                   <div className="signal-meta">{item.foodLogs + item.activityLogs} logs</div>
                 </div>

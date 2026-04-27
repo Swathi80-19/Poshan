@@ -46,7 +46,7 @@ export default function AdminPatients() {
 
     if (!session.accessToken) {
       setLoading(false)
-      setError('Sign in as a nutritionist to view your real patients.')
+      setError('Sign in as a nutritionist to view your patients.')
       return undefined
     }
 
@@ -118,17 +118,16 @@ export default function AdminPatients() {
             <div>
               <div className="eyebrow">Patient command center</div>
               <h2 className="hero-heading" style={{ marginTop: '0.55rem' }}>
-                This roster now shows the real members attached to the logged-in nutritionist.
+                Review the members connected to your practice and keep their progress in focus.
               </h2>
               <p className="hero-copy">
-                Demo patient rows have been removed. Members appear here only when they have real sessions with this
-                nutritionist account and actual shared tracker data.
+                Track sessions, goals, food logs, and activity updates so you can quickly see who may need attention.
               </p>
 
               <div className="pill-row">
                 <span className="badge badge-green">{patients.length} roster patients</span>
                 <span className="badge badge-amber">{atRiskPatients.length} low-log reviews</span>
-                <span className="badge badge-sky">Backend-driven list</span>
+                <span className="badge badge-sky">Member roster</span>
               </div>
             </div>
 
@@ -136,7 +135,7 @@ export default function AdminPatients() {
               <div className="dashboard-panel-heading">
                 <div>
                   <h3>Care load</h3>
-                  <p>Snapshot from real sessions and tracker logs</p>
+                  <p>Snapshot from appointments and tracking activity</p>
                 </div>
                 <Users size={18} color="#73955f" />
               </div>
@@ -175,7 +174,7 @@ export default function AdminPatients() {
             <div className="dashboard-panel-heading">
               <div>
                 <h3>Patient list</h3>
-                <p>Search by member name, goal, or real tracker counts</p>
+                <p>Search by member name, goal, or tracking activity</p>
               </div>
             </div>
 

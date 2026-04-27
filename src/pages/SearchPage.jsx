@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bell, Bookmark, Clock3, Search, SlidersHorizontal, Star } from 'lucide-react'
+import { Bell, Bookmark, Mail, Search, SlidersHorizontal, UserRound } from 'lucide-react'
 import { getNutritionists } from '../lib/memberApi'
 import { getMemberDisplayName } from '../lib/session'
 
 const theme = {
   primary: '#73955f',
   deep: '#465c39',
-  gold: '#c9953b',
   muted: '#7f8776',
 }
 
@@ -22,11 +21,8 @@ function getInitials(name) {
 }
 
 function buildExpertProfile(item, index) {
-  const specializations = item.specialization ? [item.specialization] : ['General Dietetics']
   const tintPalette = ['#eef3ef', '#f3e4d8', '#f1ede6', '#efe8d9', '#e8f0fb', '#eee6fa']
-  const fee = 499 + (index % 5) * 100
-  const years = typeof item.experience === 'number' && item.experience >= 0 ? item.experience : 3 + (index % 9)
-  const rating = Number((4.4 + ((index % 6) * 0.1)).toFixed(1))
+  const years = typeof item.experience === 'number' && item.experience >= 0 ? item.experience : null
 
   return {
     id: item.id,
@@ -36,14 +32,8 @@ function buildExpertProfile(item, index) {
     username: item.username || '',
     initials: getInitials(item.name || item.username || 'Nutritionist'),
     tint: tintPalette[index % tintPalette.length],
-    fee,
     exp: years,
-    expLabel: `${years} year${years === 1 ? '' : 's'}`,
-    rating,
-    reviews: 20 + (index * 7),
-    nextSlot: index === 0 ? 'Today, 3 PM' : index % 2 === 0 ? 'Tomorrow, 10 AM' : 'Today, 6 PM',
-    tag: index === 0 ? 'Featured' : null,
-    filters: specializations,
+    expLabel: years === null ? 'Experience not shared' : `${years} year${years === 1 ? '' : 's'} experience`,
   }
 }
 
@@ -52,7 +42,7 @@ export default function SearchPage() {
   const [activeFilter, setActiveFilter] = useState('All')
   const [query, setQuery] = useState('')
   const [saved, setSaved] = useState(new Set())
-  const [sortBy, setSortBy] = useState('rating')
+  const [sortBy, setSortBy] = useState('experience')
   const [experts, setExperts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -74,7 +64,7 @@ export default function SearchPage() {
       } catch (requestError) {
         if (!cancelled) {
           setExperts([])
-          setError(requestError.message || 'Unable to load registered nutritionists right now.')
+          setError(requestError.message || 'Unable to load nutritionists right now.')
         }
       } finally {
         if (!cancelled) {
@@ -100,7 +90,13 @@ export default function SearchPage() {
         const matchesFilter = activeFilter === 'All' || doctor.specialty === activeFilter
         return matchesQuery && matchesFilter
       })
-      .sort((left, right) => (sortBy === 'rating' ? right.rating - left.rating : right.exp - left.exp))
+      .sort((left, right) => {
+        if (sortBy === 'name') {
+          return left.name.localeCompare(right.name)
+        }
+
+        return (right.exp ?? -1) - (left.exp ?? -1)
+      })
   ), [activeFilter, experts, query, sortBy])
 
   const featuredDoctor = filtered[0] || experts[0] || null
@@ -110,7 +106,7 @@ export default function SearchPage() {
       <div className="page-header">
         <div className="page-header-left">
           <span className="page-header-greeting">Expert discovery</span>
-          <span className="page-header-title">Find your nutrition match</span>
+          <span className="page-header-title">Find your nutritionist</span>
         </div>
         <div className="page-header-right">
           <button className="header-icon-btn"><Bell size={18} /></button>
@@ -122,28 +118,25 @@ export default function SearchPage() {
         <section className="dashboard-hero" style={{ marginBottom: 18 }}>
           <div className="dashboard-hero-grid">
             <div>
-              <div className="eyebrow">Registered experts</div>
+              <div className="eyebrow">Experts</div>
               <h2 className="hero-heading" style={{ marginTop: '0.55rem' }}>
-                Browse nutritionists created in the real system, not demo cards.
+                Browse specialists available for guidance, planning, and consultations.
               </h2>
               <p className="hero-copy">
-                The expert directory now reflects actual registered nutritionist accounts from the backend. Once a
-                nutritionist signs up, they appear here automatically.
+                Search by name or specialization and open a profile to book an appointment.
               </p>
               <div className="pill-row">
-                <span className="badge badge-green">{experts.length} registered experts</span>
-                <span className="badge badge-amber">{filtered.length} matching your current filter</span>
-                <span className="badge badge-gray">Live backend data</span>
+                <span className="badge badge-green">{experts.length} nutritionists</span>
+                <span className="badge badge-amber">{filtered.length} matches</span>
               </div>
             </div>
 
             <div className="focus-card">
               <div className="dashboard-panel-heading">
                 <div>
-                  <h3>Featured match</h3>
-                  <p>{featuredDoctor ? 'Top result from the current real directory' : 'No registered nutritionists yet'}</p>
+                  <h3>Selected profile</h3>
+                  <p>{featuredDoctor ? 'Open the profile to review details and book.' : 'No nutritionists available yet'}</p>
                 </div>
-                {featuredDoctor?.tag ? <span className="badge badge-amber">{featuredDoctor.tag}</span> : null}
               </div>
 
               {featuredDoctor ? (
@@ -152,14 +145,12 @@ export default function SearchPage() {
                     <div className="queue-avatar" style={{ background: featuredDoctor.tint }}>{featuredDoctor.initials}</div>
                     <div>
                       <div className="queue-title">{featuredDoctor.name}</div>
-                      <div className="queue-sub">{featuredDoctor.expLabel} / {featuredDoctor.specialty}</div>
+                      <div className="queue-sub">{featuredDoctor.specialty}</div>
                     </div>
-                    <div className="queue-meta" style={{ color: theme.gold, fontWeight: 800 }}>Rs {featuredDoctor.fee}</div>
                   </div>
                   <div className="pill-row">
-                    <span className="badge badge-green">{featuredDoctor.rating} rating</span>
-                    <span className="badge badge-gray">{featuredDoctor.reviews} reviews</span>
-                    <span className="badge badge-amber">{featuredDoctor.nextSlot}</span>
+                    <span className="badge badge-green">{featuredDoctor.expLabel}</span>
+                    {featuredDoctor.username ? <span className="badge badge-gray">@{featuredDoctor.username}</span> : null}
                   </div>
                   <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={() => navigate(`/app/doctor/${featuredDoctor.id}`)}>
                     Open expert profile
@@ -167,7 +158,7 @@ export default function SearchPage() {
                 </>
               ) : (
                 <div className="admin-note" style={{ marginTop: '1rem' }}>
-                  Register a nutritionist account first to populate the experts directory.
+                  Nutritionist profiles will appear here when available.
                 </div>
               )}
             </div>
@@ -187,8 +178,8 @@ export default function SearchPage() {
               className="form-input"
               style={{ minHeight: 52, paddingLeft: 16 }}
             >
-              <option value="rating">Sort by rating</option>
-              <option value="exp">Sort by experience</option>
+              <option value="experience">Sort by experience</option>
+              <option value="name">Sort by name</option>
             </select>
             <button className="header-icon-btn">
               <SlidersHorizontal size={16} />
@@ -212,10 +203,10 @@ export default function SearchPage() {
           <span style={{ color: theme.muted, fontSize: 13 }}>{filtered.length} experts found</span>
         </div>
 
-        {loading ? <div className="admin-note">Loading registered nutritionists...</div> : null}
+        {loading ? <div className="admin-note">Loading nutritionists...</div> : null}
         {error ? <div className="admin-note">{error}</div> : null}
         {!loading && !error && !filtered.length ? (
-          <div className="admin-note">No registered nutritionists match this search yet.</div>
+          <div className="admin-note">No nutritionists match this search yet.</div>
         ) : null}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
@@ -254,32 +245,26 @@ export default function SearchPage() {
                 </div>
 
                 <div className="pill-row" style={{ marginTop: 0, marginBottom: 14 }}>
-                  {doctor.tag ? <span className="badge badge-amber">{doctor.tag}</span> : null}
                   <span className="badge badge-green">{doctor.expLabel}</span>
                 </div>
 
                 <div className="timeline-list">
                   <div className="signal-item" style={{ gridTemplateColumns: 'auto 1fr auto', paddingTop: 0 }}>
-                    <Star size={14} color={theme.gold} fill={theme.gold} />
-                    <div className="signal-title">Rating</div>
-                    <div className="signal-meta" style={{ color: theme.deep }}>{doctor.rating} ({doctor.reviews})</div>
-                  </div>
-                  <div className="signal-item" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
-                    <Search size={14} color={theme.muted} />
+                    <UserRound size={14} color={theme.deep} />
                     <div className="signal-title">Username</div>
                     <div className="signal-meta">{doctor.username || 'Not set'}</div>
                   </div>
                   <div className="signal-item" style={{ gridTemplateColumns: 'auto 1fr auto' }}>
-                    <Clock3 size={14} color={theme.muted} />
-                    <div className="signal-title">Next slot</div>
-                    <div className="signal-meta">{doctor.nextSlot}</div>
+                    <Mail size={14} color={theme.muted} />
+                    <div className="signal-title">Email</div>
+                    <div className="signal-meta">{doctor.email || 'Not shared'}</div>
                   </div>
                 </div>
 
                 <div className="dashboard-panel-heading" style={{ marginTop: 16, marginBottom: 0 }}>
                   <div>
-                    <div className="eyebrow" style={{ fontSize: 11 }}>Consultation fee</div>
-                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, lineHeight: 1, marginTop: 6 }}>Rs {doctor.fee}</div>
+                    <div className="eyebrow" style={{ fontSize: 11 }}>Available for booking</div>
+                    <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, lineHeight: 1, marginTop: 6 }}>{doctor.specialty}</div>
                   </div>
                   <button
                     className="btn btn-primary btn-sm"

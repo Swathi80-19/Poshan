@@ -114,15 +114,15 @@ export default function NutritionistRegisterPage() {
             </div>
           </div>
 
-          <h1 className="auth-heading">Set up a real nutritionist practice account.</h1>
+          <h1 className="auth-heading">Set up your nutritionist practice account.</h1>
           <p className="auth-copy">
-            Registered nutritionists now flow directly into the expert directory, member booking pages, and admin workspace.
+            Create your profile so members can discover you, book appointments, and connect with you through Poshan.
           </p>
 
           <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
-            <li><span className="feature-dot">&bull;</span><span>Registration writes to the backend, not local demo storage.</span></li>
-            <li><span className="feature-dot">&bull;</span><span>New accounts show up in the member expert list automatically.</span></li>
-            <li><span className="feature-dot">&bull;</span><span>Appointments and patients stay tied to the logged-in nutritionist account.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Show your specialization and experience in the expert directory.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Receive appointment requests and member messages in your portal.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Keep your roster, reports, and consultations organized in one workspace.</span></li>
           </ul>
         </div>
       </section>

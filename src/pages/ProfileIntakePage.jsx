@@ -170,7 +170,7 @@ export default function ProfileIntakePage() {
             <div className="dashboard-panel-heading">
               <div>
                 <h3>Why this matters</h3>
-                <p>These details keep your intake and dashboard grounded in your actual profile, not sample defaults.</p>
+                <p>These details keep your intake and dashboard grounded in your own profile and goals.</p>
               </div>
             </div>
 

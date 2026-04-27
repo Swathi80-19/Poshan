@@ -94,7 +94,7 @@ export default function UserRegisterPage() {
           <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
             <li><span className="feature-dot">&bull;</span><span>Readable daily care summaries.</span></li>
             <li><span className="feature-dot">&bull;</span><span>Body-profile intake before your first dashboard visit.</span></li>
-            <li><span className="feature-dot">&bull;</span><span>Account-based tracking instead of sample demo data.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Your progress stays connected to your own account and history.</span></li>
           </ul>
         </div>
       </section>

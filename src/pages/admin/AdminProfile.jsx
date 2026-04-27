@@ -1,47 +1,41 @@
 import { useState } from 'react'
 import {
-  Award,
   Bell,
   Check,
   Edit2,
   Globe,
   Linkedin,
+  Mail,
+  Phone,
   Star,
-  Users,
+  UserRound,
 } from 'lucide-react'
 import { getNutritionistSession } from '../../lib/session'
 
-const specializations = [
-  'Weight management',
-  'Sports nutrition',
-  'Diabetes care',
-  'Gut health',
-  'PCOS',
-  'Pediatric nutrition',
-]
-
-const certifications = [
-  { name: 'Registered dietitian nutritionist', year: '2014', issuer: 'Academy of Nutrition' },
-  { name: 'MSc Nutrition and Dietetics', year: '2012', issuer: 'AIIMS, New Delhi' },
-  { name: 'Sports nutrition certificate', year: '2018', issuer: 'NSCA' },
-]
-
-const reviews = [
-  { name: 'Rekha S.', text: 'The plan felt balanced and actually sustainable. I stayed consistent for months.', date: '2 days ago' },
-  { name: 'Krishna M.', text: 'A very clear, data-led approach that still felt personal and supportive.', date: '1 week ago' },
-  { name: 'Priya V.', text: 'My PCOS symptoms improved because the guidance was specific and realistic.', date: '2 weeks ago' },
-]
+function buildDefaultBio(displayName, specialization) {
+  return `${displayName} supports members through ${specialization.toLowerCase()} with a focus on clear plans, practical follow-through, and consistent care. This profile helps members understand your background before they book a consultation.`
+}
 
 export default function AdminProfile() {
   const [editMode, setEditMode] = useState(false)
   const session = getNutritionistSession()
   const displayName = session.name || session.username || 'Nutritionist'
-  const specialization = session.specialization || 'Clinical nutritionist'
-  const [bio, setBio] = useState(
-    `${displayName} is a Poshan nutritionist focused on clear, sustainable diet planning and structured care follow-through. The profile surface now mirrors the member-side design system while keeping clinic details easy to scan.`,
-  )
-
+  const specialization = session.specialization || 'Clinical Nutrition'
+  const experience = typeof session.experience === 'number' ? session.experience : null
+  const [bio, setBio] = useState(() => buildDefaultBio(displayName, specialization))
   const initial = displayName.charAt(0).toUpperCase()
+
+  const profileStats = [
+    { label: 'Specialization', value: specialization },
+    { label: 'Experience', value: experience === null ? 'Not shared' : `${experience} year${experience === 1 ? '' : 's'}` },
+    { label: 'Visibility', value: 'Expert directory' },
+  ]
+
+  const contactItems = [
+    { label: 'Username', value: session.username || 'Not shared', icon: UserRound },
+    { label: 'Email', value: session.email || 'Not shared', icon: Mail },
+    { label: 'Phone', value: session.phone || 'Not shared', icon: Phone },
+  ]
 
   return (
     <div className="animate-fade">
@@ -77,19 +71,13 @@ export default function AdminProfile() {
               <p>{specialization}</p>
 
               <div className="admin-rating-row">
-                {[1, 2, 3, 4, 5].map((item) => (
-                  <Star key={item} size={14} fill="#c9953b" color="#c9953b" />
-                ))}
-                <span>4.9</span>
-                <small>99 reviews</small>
+                <Star size={14} color="#c9953b" />
+                <span>Public profile</span>
+                <small>{experience === null ? 'Experience not shared yet' : `${experience} year${experience === 1 ? '' : 's'} experience`}</small>
               </div>
 
               <div className="admin-profile-stat-grid">
-                {[
-                  { value: '12+', label: 'Years' },
-                  { value: '500+', label: 'Patients' },
-                  { value: '99', label: 'Reviews' },
-                ].map((item) => (
+                {profileStats.map((item) => (
                   <div key={item.label}>
                     <strong>{item.value}</strong>
                     <span>{item.label}</span>
@@ -99,7 +87,7 @@ export default function AdminProfile() {
 
               <div className="admin-profile-links">
                 {[Linkedin, Globe].map((Icon, index) => (
-                  <button key={index} className="icon-btn">
+                  <button key={index} className="icon-btn" type="button">
                     <Icon size={15} />
                   </button>
                 ))}
@@ -112,7 +100,7 @@ export default function AdminProfile() {
               <div className="dashboard-panel-heading">
                 <div>
                   <h3>About</h3>
-                  <p>Profile copy aligned to the refreshed Poshan workspace</p>
+                  <p>Share a short introduction that members will see before booking.</p>
                 </div>
               </div>
 
@@ -130,37 +118,34 @@ export default function AdminProfile() {
 
               <div className="dashboard-panel-heading">
                 <div>
-                  <h3>Specializations</h3>
-                  <p>Focus areas shown using the shared Poshan pill system</p>
+                  <h3>Focus area</h3>
+                  <p>Highlight the primary specialization shown in the expert directory.</p>
                 </div>
               </div>
 
               <div className="pill-row">
-                {specializations.map((item) => (
-                  <span key={item} className="badge badge-green">{item}</span>
-                ))}
+                <span className="badge badge-green">{specialization}</span>
               </div>
             </section>
 
             <section className="support-card">
               <div className="dashboard-panel-heading">
                 <div>
-                  <h3>Credentials</h3>
-                  <p>Education and certification history</p>
+                  <h3>Contact details</h3>
+                  <p>Profile information available for your account.</p>
                 </div>
               </div>
 
               <div className="signal-list">
-                {certifications.map((item) => (
-                  <div key={item.name} className="signal-item">
+                {contactItems.map(({ label, value, icon: Icon }) => (
+                  <div key={label} className="signal-item">
                     <div className="signal-avatar" style={{ background: 'rgba(115, 149, 95, 0.12)' }}>
-                      <Award size={16} color="#73955f" />
+                      <Icon size={16} color="#73955f" />
                     </div>
                     <div>
-                      <div className="signal-title">{item.name}</div>
-                      <div className="signal-sub">{item.issuer}</div>
+                      <div className="signal-title">{label}</div>
+                      <div className="signal-sub">{value}</div>
                     </div>
-                    <div className="signal-meta">{item.year}</div>
                   </div>
                 ))}
               </div>
@@ -169,47 +154,24 @@ export default function AdminProfile() {
             <section className="support-card">
               <div className="dashboard-panel-heading">
                 <div>
-                  <h3>Practice notes</h3>
-                  <p>Availability and public-facing signals</p>
+                  <h3>Directory status</h3>
+                  <p>How your profile appears inside Poshan.</p>
                 </div>
               </div>
 
               <div className="mini-metric-grid">
                 <div className="mini-metric">
-                  <strong>Mon - Sat</strong>
-                  <span>availability window</span>
+                  <strong>Visible</strong>
+                  <span>expert listing status</span>
                 </div>
                 <div className="mini-metric">
-                  <strong>Tomorrow</strong>
-                  <span>next open slot</span>
+                  <strong>{session.email ? 'Verified profile' : 'Profile details pending'}</strong>
+                  <span>account readiness</span>
                 </div>
               </div>
 
               <div className="admin-note" style={{ marginTop: '1rem' }}>
-                Currently accepting new patients. The profile page now carries the same calm
-                surfaces, spacing, and hierarchy used across the member-facing dashboard.
-              </div>
-            </section>
-
-            <section className="support-card">
-              <div className="dashboard-panel-heading">
-                <div>
-                  <h3>Patient reviews</h3>
-                  <p>Recent voice-of-patient highlights</p>
-                </div>
-                <Users size={18} color="#73955f" />
-              </div>
-
-              <div className="admin-review-list">
-                {reviews.map((review) => (
-                  <article key={review.name} className="admin-review-card">
-                    <div className="admin-review-top">
-                      <strong>{review.name}</strong>
-                      <span>{review.date}</span>
-                    </div>
-                    <p>{review.text}</p>
-                  </article>
-                ))}
+                Member feedback and additional credentials will appear here when that information becomes available.
               </div>
             </section>
           </div>

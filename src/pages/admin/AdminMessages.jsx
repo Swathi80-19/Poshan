@@ -87,7 +87,7 @@ export default function AdminMessages() {
       } catch (requestError) {
         if (!cancelled) {
           setConversations([])
-          setError(requestError.message || 'Unable to load nutritionist messages right now.')
+          setError(requestError.message || 'Unable to load messages right now.')
         }
       } finally {
         if (!cancelled) {
@@ -215,9 +215,9 @@ export default function AdminMessages() {
           <div className="dashboard-panel-heading" style={{ alignItems: 'flex-start' }}>
             <div>
               <div className="eyebrow">Practice inbox</div>
-              <h3 style={{ marginTop: 8 }}>One thread per booked member, synced across both sides of care.</h3>
+              <h3 style={{ marginTop: 8 }}>Manage member conversations in one dedicated inbox.</h3>
               <p style={{ color: '#6f7867', marginTop: 8, maxWidth: 760 }}>
-                Replies sent here appear in the member app immediately. Use this space for preparation notes, follow-up, and care coordination.
+                Review appointment discussions, send follow-ups, and keep each member conversation in a single thread.
               </p>
             </div>
             <div className="pill-row">
@@ -238,7 +238,7 @@ export default function AdminMessages() {
                 <div className="metric-card-icon" style={{ background: item.tone }}>
                   <UserRound size={18} color={item.accent} />
                 </div>
-                <span style={{ color: item.accent, fontWeight: 800, fontSize: '0.78rem' }}>Synced</span>
+                <span style={{ color: item.accent, fontWeight: 800, fontSize: '0.78rem' }}>Inbox</span>
               </div>
               <div className="metric-card-value">{item.value}</div>
               <div className="metric-card-label">{item.label}</div>
@@ -258,7 +258,7 @@ export default function AdminMessages() {
               {loading ? <div className="admin-note">Loading member threads...</div> : null}
               {error ? <div className="admin-note">{error}</div> : null}
               {!loading && !error && !filtered.length ? (
-                <div className="admin-note">Messages unlock after members book this nutritionist account.</div>
+                <div className="admin-note">Messages become available after a member books an appointment.</div>
               ) : null}
 
               {filtered.map((conversation) => {
@@ -335,7 +335,7 @@ export default function AdminMessages() {
                     <strong style={{ color: '#2d3827' }}>Thread opened</strong>
                   </div>
                   <div style={{ color: '#5f6958', lineHeight: 1.6 }}>
-                    {thread.counterpartName} has a real booking with this nutritionist account. Send the first message to begin the shared conversation.
+                    {thread.counterpartName} has a booked appointment. Send the first message to begin the conversation.
                   </div>
                 </div>
               ) : null}
@@ -385,7 +385,7 @@ export default function AdminMessages() {
             ) : (
               <div style={{ padding: 18, borderTop: '1px solid rgba(92,120,74,0.08)' }}>
                 <div className="auth-note">
-                  <span>This thread becomes interactive when the relationship has an upcoming booked appointment.</span>
+                  <span>This thread becomes interactive when there is an upcoming appointment.</span>
                 </div>
               </div>
             )}

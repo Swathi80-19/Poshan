@@ -1,41 +1,16 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
   Clock,
-  CreditCard,
   Heart,
-  Lock,
   MessageCircle,
   Share2,
-  ShieldCheck,
-  Smartphone,
-  Star,
 } from 'lucide-react'
 import { createAppointment, getNutritionists } from '../lib/memberApi'
 import { getMemberSession } from '../lib/session'
-
-const timeSlots = [
-  { id: 1, time: '09:00 AM', available: true },
-  { id: 2, time: '10:00 AM', available: true },
-  { id: 3, time: '11:30 AM', available: true },
-  { id: 4, time: '02:00 PM', available: true },
-  { id: 5, time: '03:30 PM', available: true },
-  { id: 6, time: '04:30 PM', available: true },
-]
-
-const upcomingDates = Array.from({ length: 5 }, (_, index) => {
-  const date = new Date()
-  date.setDate(date.getDate() + index)
-
-  return {
-    label: index === 0 ? 'Today' : index === 1 ? 'Tomorrow' : new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date),
-    date: new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date),
-    iso: new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString(),
-  }
-})
 
 function getInitials(name) {
   return name
@@ -47,10 +22,22 @@ function getInitials(name) {
     .toUpperCase() || 'N'
 }
 
+function formatDateLabel(value) {
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(`${value}T00:00:00`))
+}
+
+function formatTimeLabel(value) {
+  const [hours, minutes] = value.split(':').map(Number)
+  const date = new Date()
+  date.setHours(hours, minutes, 0, 0)
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date)
+}
+
 function buildDoctorProfile(item) {
-  const seed = Number(item.id || 0)
-  const fee = 499 + (seed % 5) * 100
-  const years = typeof item.experience === 'number' && item.experience >= 0 ? item.experience : 3 + (seed % 9)
+  const years = typeof item.experience === 'number' && item.experience >= 0 ? item.experience : null
 
   return {
     id: item.id,
@@ -58,73 +45,12 @@ function buildDoctorProfile(item) {
     specialty: item.specialization || 'General Dietetics',
     email: item.email || '',
     username: item.username || '',
-    fee,
-    exp: years,
-    expLabel: `${years} year${years === 1 ? '' : 's'}`,
-    rating: Number((4.4 + ((seed % 6) * 0.1)).toFixed(1)),
-    reviews: 20 + (seed * 7),
+    expLabel: years === null ? 'Experience not shared' : `${years} year${years === 1 ? '' : 's'} experience`,
     initials: getInitials(item.name || item.username || 'Nutritionist'),
-    about: `${item.name || 'This nutritionist'} is registered in Poshan and available for member consultations. Their backend account details now drive the expert profile instead of demo data.`,
-    specializations: [item.specialization || 'General Dietetics', 'Personalized planning', 'Meal structure', 'Lifestyle coaching'],
+    about: `${item.name || 'This nutritionist'} is available for appointments through Poshan.`,
+    specializations: [item.specialization || 'General Dietetics'],
     color: 'linear-gradient(135deg, #C8DAB8 0%, #8BAF7C 100%)',
   }
-}
-
-function PaymentForm({ payMethod, setPayMethod, onPay, loading, total }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div className="card" style={{ padding: 22 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 14 }}>Select payment method</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[
-            { id: 'card', label: 'Card', icon: CreditCard, desc: 'Credit or debit card' },
-            { id: 'upi', label: 'UPI', icon: Smartphone, desc: 'GPay, PhonePe, Paytm' },
-          ].map(({ id, label, icon: Icon, desc }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setPayMethod(id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                padding: '14px 16px',
-                borderRadius: 14,
-                cursor: 'pointer',
-                border: payMethod === id ? '2px solid #8BAF7C' : '1.5px solid #E5E7EB',
-                background: payMethod === id ? '#F0F8EC' : 'white',
-                textAlign: 'left',
-              }}
-            >
-              <div style={{ width: 40, height: 40, borderRadius: 12, background: payMethod === id ? '#D4E8CB' : '#F3F4F6', display: 'grid', placeItems: 'center' }}>
-                <Icon size={17} color={payMethod === id ? '#4D7A3E' : '#6B7280'} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>{label}</div>
-                <div style={{ fontSize: 12, color: '#9CA3AF' }}>{desc}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="card" style={{ padding: 22 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 14 }}>
-          {payMethod === 'card' ? 'Card payment' : 'UPI payment'}
-        </div>
-        <div className="form-group">
-          <label className="form-label">{payMethod === 'card' ? 'Cardholder name' : 'UPI id'}</label>
-          <input
-            className="form-input"
-            placeholder={payMethod === 'card' ? 'Enter cardholder name' : 'yourname@upi'}
-          />
-        </div>
-        <button className="btn btn-primary" style={{ width: '100%' }} onClick={onPay} disabled={loading}>
-          {loading ? 'Processing payment...' : <><Lock size={14} /> Pay Rs {total.toLocaleString()}</>}
-        </button>
-      </div>
-    </div>
-  )
 }
 
 export default function DoctorProfilePage() {
@@ -132,13 +58,15 @@ export default function DoctorProfilePage() {
   const { id } = useParams()
   const [liked, setLiked] = useState(false)
   const [step, setStep] = useState('profile')
-  const [selectedDate, setSelectedDate] = useState(0)
-  const [selectedSlot, setSelectedSlot] = useState(null)
-  const [payMethod, setPayMethod] = useState('upi')
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [selectedTime, setSelectedTime] = useState('10:00')
+  const [mode, setMode] = useState('VIDEO')
+  const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [doctor, setDoctor] = useState(null)
+  const [bookedDetails, setBookedDetails] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -177,12 +105,9 @@ export default function DoctorProfilePage() {
     }
   }, [id])
 
-  const gst = useMemo(() => Math.round((doctor?.fee || 0) * 0.18), [doctor])
-  const total = useMemo(() => (doctor?.fee || 0) + gst, [doctor, gst])
-
-  const handlePay = async () => {
-    if (!doctor || !selectedSlot) {
-      setError('Choose a time slot before continuing.')
+  const handleBook = async () => {
+    if (!doctor || !selectedDate || !selectedTime) {
+      setError('Choose an appointment date and time before continuing.')
       return
     }
 
@@ -196,23 +121,25 @@ export default function DoctorProfilePage() {
     try {
       setSubmitting(true)
       setError('')
-      const selectedDateMeta = upcomingDates[selectedDate]
-      const selectedTimeMeta = timeSlots.find((slot) => slot.id === selectedSlot)
-      const [timeValue, meridiem] = (selectedTimeMeta?.time || '10:00 AM').split(' ')
-      const [hours, minutes] = timeValue.split(':').map(Number)
-      const appointmentDate = new Date(selectedDateMeta.iso)
-      const normalizedHours = meridiem === 'PM' && hours !== 12 ? hours + 12 : meridiem === 'AM' && hours === 12 ? 0 : hours
-      appointmentDate.setHours(normalizedHours, minutes || 0, 0, 0)
+
+      const appointmentDate = new Date(`${selectedDate}T${selectedTime}:00`)
+      const dateLabel = formatDateLabel(selectedDate)
+      const timeLabel = formatTimeLabel(selectedTime)
 
       await createAppointment(session.accessToken, {
         nutritionistId: doctor.id,
-        dateLabel: selectedDateMeta.date,
-        timeLabel: selectedTimeMeta?.time || '10:00 AM',
-        mode: 'Video consultation',
+        dateLabel,
+        timeLabel,
+        mode,
         scheduledAt: appointmentDate.toISOString().slice(0, 19),
-        notes: '',
+        notes: notes.trim(),
       })
 
+      setBookedDetails({
+        dateLabel,
+        timeLabel,
+        mode,
+      })
       setStep('success')
     } catch (requestError) {
       setError(requestError.message || 'Unable to book this appointment right now.')
@@ -266,9 +193,9 @@ export default function DoctorProfilePage() {
             </div>
             <h2 style={{ fontSize: 26, fontWeight: 800, color: '#111827', marginBottom: 8 }}>Appointment booked</h2>
             <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.6, marginBottom: 24 }}>
-              Your session with <strong style={{ color: '#8BAF7C' }}>{doctor.name}</strong> is confirmed for{' '}
-              <strong>{upcomingDates[selectedDate].date}</strong> at{' '}
-              <strong>{timeSlots.find((slot) => slot.id === selectedSlot)?.time}</strong>.
+              Your session with <strong style={{ color: '#8BAF7C' }}>{doctor.name}</strong> is scheduled for{' '}
+              <strong>{bookedDetails?.dateLabel}</strong> at{' '}
+              <strong>{bookedDetails?.timeLabel}</strong>.
             </p>
             <div className="mobile-action-row" style={{ display: 'flex', gap: 12 }}>
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => navigate('/app/messages')}>
@@ -301,53 +228,54 @@ export default function DoctorProfilePage() {
           <div className="doctor-split-layout">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div className="card" style={{ padding: 24 }}>
-                <div className="section-title" style={{ marginBottom: 16 }}>Select date</div>
-                <div className="doctor-date-row" style={{ display: 'flex', gap: 10 }}>
-                  {upcomingDates.map((date, index) => (
+                <div className="section-title" style={{ marginBottom: 16 }}>Choose date</div>
+                <input
+                  className="form-input"
+                  type="date"
+                  min={new Date().toISOString().slice(0, 10)}
+                  value={selectedDate}
+                  onChange={(event) => setSelectedDate(event.target.value)}
+                />
+              </div>
+
+              <div className="card" style={{ padding: 24 }}>
+                <div className="section-title" style={{ marginBottom: 16 }}>Choose time</div>
+                <input
+                  className="form-input"
+                  type="time"
+                  value={selectedTime}
+                  onChange={(event) => setSelectedTime(event.target.value)}
+                />
+              </div>
+
+              <div className="card" style={{ padding: 24 }}>
+                <div className="section-title" style={{ marginBottom: 16 }}>Mode</div>
+                <div className="filter-tabs">
+                  {[
+                    { value: 'VIDEO', label: 'Video' },
+                    { value: 'CHAT', label: 'Chat' },
+                    { value: 'IN_PERSON', label: 'In person' },
+                  ].map((option) => (
                     <button
-                      key={date.iso}
+                      key={option.value}
                       type="button"
-                      onClick={() => setSelectedDate(index)}
-                      style={{
-                        flex: 1,
-                        padding: '12px 8px',
-                        borderRadius: 14,
-                        cursor: 'pointer',
-                        border: selectedDate === index ? '2px solid #8BAF7C' : '1.5px solid #E5E7EB',
-                        background: selectedDate === index ? '#E8F1E4' : 'white',
-                      }}
+                      className={`filter-tab ${mode === option.value ? 'active' : ''}`}
+                      onClick={() => setMode(option.value)}
                     >
-                      <div style={{ fontSize: 11, color: selectedDate === index ? '#4D7A3E' : '#9CA3AF', fontWeight: 600, marginBottom: 4 }}>{date.label}</div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: selectedDate === index ? '#4D7A3E' : '#111827' }}>{date.date.split(' ')[1]}</div>
-                      <div style={{ fontSize: 10, color: selectedDate === index ? '#8BAF7C' : '#9CA3AF' }}>{date.date.split(' ')[0]}</div>
+                      {option.label}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="card" style={{ padding: 24 }}>
-                <div className="section-title" style={{ marginBottom: 16 }}>Available time slots</div>
-                <div className="time-slot-grid">
-                  {timeSlots.map((slot) => (
-                    <button
-                      key={slot.id}
-                      type="button"
-                      onClick={() => setSelectedSlot(slot.id)}
-                      style={{
-                        padding: '10px 8px',
-                        borderRadius: 12,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        border: selectedSlot === slot.id ? '2px solid #8BAF7C' : '1.5px solid #E5E7EB',
-                        background: selectedSlot === slot.id ? '#8BAF7C' : 'white',
-                        color: selectedSlot === slot.id ? 'white' : '#374151',
-                      }}
-                    >
-                      {slot.time}
-                    </button>
-                  ))}
-                </div>
+                <div className="section-title" style={{ marginBottom: 16 }}>Notes</div>
+                <textarea
+                  className="form-input tracker-textarea"
+                  placeholder="Add anything you want to share before the session"
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                />
               </div>
 
               {error ? <div className="admin-note">{error}</div> : null}
@@ -363,96 +291,29 @@ export default function DoctorProfilePage() {
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}>{doctor.name}</div>
                     <div style={{ fontSize: 12, color: '#9CA3AF' }}>{doctor.specialty}</div>
-                    <div style={{ fontSize: 11, color: '#8BAF7C', fontWeight: 600, marginTop: 2 }}>{doctor.rating} rating / {doctor.expLabel}</div>
+                    <div style={{ fontSize: 11, color: '#8BAF7C', fontWeight: 600, marginTop: 2 }}>{doctor.expLabel}</div>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                     <span style={{ color: '#6B7280' }}>Date</span>
-                    <span style={{ fontWeight: 600, color: '#111827' }}>{upcomingDates[selectedDate].date}</span>
+                    <span style={{ fontWeight: 600, color: '#111827' }}>{selectedDate ? formatDateLabel(selectedDate) : 'Select a date'}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                     <span style={{ color: '#6B7280' }}>Time</span>
-                    <span style={{ fontWeight: 600, color: '#111827' }}>{timeSlots.find((slot) => slot.id === selectedSlot)?.time || 'Select a slot'}</span>
+                    <span style={{ fontWeight: 600, color: '#111827' }}>{selectedTime ? formatTimeLabel(selectedTime) : 'Select a time'}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                     <span style={{ color: '#6B7280' }}>Mode</span>
-                    <span style={{ fontWeight: 600, color: '#111827' }}>Video consultation</span>
+                    <span style={{ fontWeight: 600, color: '#111827' }}>{mode.replaceAll('_', ' ')}</span>
                   </div>
                 </div>
 
-                <div style={{ height: 1, background: '#F3F4F6', margin: '8px 0' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 8 }}>
-                  <span style={{ color: '#6B7280' }}>Consultation fee</span>
-                  <span style={{ fontWeight: 600, color: '#111827' }}>Rs {doctor.fee}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginTop: 8 }}>
-                  <span style={{ color: '#6B7280' }}>GST (18%)</span>
-                  <span style={{ fontWeight: 600, color: '#111827' }}>Rs {gst}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0 0', borderTop: '2px solid #F3F4F6', marginTop: 8 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>Total</span>
-                  <span style={{ fontSize: 20, fontWeight: 800, color: '#8BAF7C' }}>Rs {total.toLocaleString()}</span>
-                </div>
-
-                <button className="btn btn-primary" style={{ width: '100%', marginTop: 16 }} onClick={() => setStep('payment')} disabled={!selectedSlot}>
-                  Continue to payment
+                <button className="btn btn-primary" style={{ width: '100%', marginTop: 12 }} onClick={handleBook} disabled={submitting}>
+                  {submitting ? 'Booking appointment...' : 'Confirm appointment'}
                 </button>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, justifyContent: 'center' }}>
-                  <ShieldCheck size={13} color="#9CA3AF" />
-                  <span style={{ fontSize: 11, color: '#9CA3AF' }}>Real appointment will be saved to the backend.</span>
-                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (step === 'payment') {
-    return (
-      <div className="animate-fade">
-        <div className="page-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button className="header-icon-btn" onClick={() => setStep('booking')}><ArrowLeft size={18} /></button>
-            <div>
-              <div className="page-header-greeting">Secure checkout</div>
-              <div className="page-header-title">Payment</div>
-            </div>
-          </div>
-        </div>
-        <div className="page-body">
-          <div className="doctor-split-layout">
-            <PaymentForm payMethod={payMethod} setPayMethod={setPayMethod} onPay={handlePay} loading={submitting} total={total} />
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div className="card" style={{ padding: 22 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 14 }}>Booking review</div>
-                <div style={{ background: '#F0F8EC', borderRadius: 14, padding: 16, marginBottom: 16 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}>{doctor.name}</div>
-                  <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 10 }}>{doctor.specialty}</div>
-                  <div style={{ fontSize: 12, color: '#374151', marginBottom: 5 }}>{upcomingDates[selectedDate].date}</div>
-                  <div style={{ fontSize: 12, color: '#374151', marginBottom: 5 }}>{timeSlots.find((slot) => slot.id === selectedSlot)?.time}</div>
-                  <div style={{ fontSize: 12, color: '#374151' }}>Video consultation</div>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
-                  <span style={{ color: '#6B7280' }}>Consultation fee</span>
-                  <span style={{ fontWeight: 600, color: '#111827' }}>Rs {doctor.fee}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 8 }}>
-                  <span style={{ color: '#6B7280' }}>GST (18%)</span>
-                  <span style={{ fontWeight: 600, color: '#111827' }}>Rs {gst}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 0', borderTop: '2px solid #F3F4F6' }}>
-                  <span style={{ fontSize: 14, fontWeight: 700 }}>Total</span>
-                  <span style={{ fontSize: 20, fontWeight: 800, color: '#8BAF7C' }}>Rs {total.toLocaleString()}</span>
-                </div>
-              </div>
-
-              {error ? <div className="admin-note">{error}</div> : null}
             </div>
           </div>
         </div>
@@ -491,17 +352,13 @@ export default function DoctorProfilePage() {
                 <h2 style={{ fontSize: 19, fontWeight: 800, color: '#111827', marginBottom: 4 }}>{doctor.name}</h2>
                 <p style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 18 }}>{doctor.specialty}</p>
                 <div style={{ display: 'flex', justifyContent: 'space-around', padding: '14px 0', borderTop: '1px solid #F3F4F6', borderBottom: '1px solid #F3F4F6', marginBottom: 16 }}>
-                  {[[Star, doctor.rating, 'Rating', '#EAB308'], [Clock, doctor.expLabel, 'Experience', '#3B82F6'], [ShieldCheck, doctor.reviews, 'Reviews', '#8BAF7C']].map(([Icon, value, label, color]) => (
+                  {[[Clock, doctor.expLabel, 'Experience', '#3B82F6'], [Calendar, doctor.specialty, 'Focus', '#8BAF7C']].map(([Icon, value, label, color]) => (
                     <div key={label} style={{ textAlign: 'center' }}>
                       <Icon size={15} color={color} style={{ marginBottom: 4 }} />
                       <div style={{ fontSize: 14, fontWeight: 800, color: '#111827' }}>{value}</div>
                       <div style={{ fontSize: 10, color: '#9CA3AF' }}>{label}</div>
                     </div>
                   ))}
-                </div>
-                <div style={{ background: '#F0F8EC', border: '1.5px solid #D4E0C8', borderRadius: 12, padding: '12px 16px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 13, color: '#6B7280' }}>Consultation fee</span>
-                  <span style={{ fontSize: 20, fontWeight: 800, color: '#8BAF7C' }}>Rs {doctor.fee}</span>
                 </div>
                 <div className="mobile-action-row" style={{ display: 'flex', gap: 10 }}>
                   <button className="btn btn-ghost" style={{ flex: 1, fontSize: 13 }} onClick={() => navigate('/app/messages')}>
@@ -538,7 +395,7 @@ export default function DoctorProfilePage() {
               <div className="section-title" style={{ marginBottom: 12 }}>About</div>
               <p style={{ fontSize: 14, color: '#6B7280', lineHeight: 1.7 }}>{doctor.about}</p>
               <div className="divider" style={{ margin: '16px 0' }} />
-              <div className="section-title" style={{ marginBottom: 10 }}>Specializations</div>
+              <div className="section-title" style={{ marginBottom: 10 }}>Specialization</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {doctor.specializations.map((specialization) => (
                   <span key={specialization} className="pill pill-green">{specialization}</span>
@@ -548,8 +405,8 @@ export default function DoctorProfilePage() {
 
             <div className="doctor-cta" style={{ background: 'linear-gradient(135deg, #8BAF7C, #5A8A4A)', borderRadius: 20, padding: 26, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 5 }}>Ready to book a real consultation?</h3>
-                <p style={{ fontSize: 13, opacity: 0.85 }}>This expert comes from the live nutritionist registry.</p>
+                <h3 style={{ fontSize: 17, fontWeight: 800, marginBottom: 5 }}>Ready to schedule your consultation?</h3>
+                <p style={{ fontSize: 13, opacity: 0.85 }}>Choose a date, time, and mode that works for you.</p>
               </div>
               <button className="btn" style={{ background: 'white', color: '#5A8A4A', padding: '11px 22px', fontSize: 13, flexShrink: 0 }} onClick={() => setStep('booking')}>
                 Book appointment
