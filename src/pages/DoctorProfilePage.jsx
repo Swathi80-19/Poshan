@@ -50,6 +50,7 @@ function getInitials(name) {
 function buildDoctorProfile(item) {
   const seed = Number(item.id || 0)
   const fee = 499 + (seed % 5) * 100
+  const years = typeof item.experience === 'number' && item.experience >= 0 ? item.experience : 3 + (seed % 9)
 
   return {
     id: item.id,
@@ -58,7 +59,8 @@ function buildDoctorProfile(item) {
     email: item.email || '',
     username: item.username || '',
     fee,
-    exp: `${3 + (seed % 9)} years`,
+    exp: years,
+    expLabel: `${years} year${years === 1 ? '' : 's'}`,
     rating: Number((4.4 + ((seed % 6) * 0.1)).toFixed(1)),
     reviews: 20 + (seed * 7),
     initials: getInitials(item.name || item.username || 'Nutritionist'),
@@ -361,7 +363,7 @@ export default function DoctorProfilePage() {
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: '#111827' }}>{doctor.name}</div>
                     <div style={{ fontSize: 12, color: '#9CA3AF' }}>{doctor.specialty}</div>
-                    <div style={{ fontSize: 11, color: '#8BAF7C', fontWeight: 600, marginTop: 2 }}>{doctor.rating} rating Â· {doctor.exp}</div>
+                    <div style={{ fontSize: 11, color: '#8BAF7C', fontWeight: 600, marginTop: 2 }}>{doctor.rating} rating / {doctor.expLabel}</div>
                   </div>
                 </div>
 
@@ -489,7 +491,7 @@ export default function DoctorProfilePage() {
                 <h2 style={{ fontSize: 19, fontWeight: 800, color: '#111827', marginBottom: 4 }}>{doctor.name}</h2>
                 <p style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 18 }}>{doctor.specialty}</p>
                 <div style={{ display: 'flex', justifyContent: 'space-around', padding: '14px 0', borderTop: '1px solid #F3F4F6', borderBottom: '1px solid #F3F4F6', marginBottom: 16 }}>
-                  {[[Star, doctor.rating, 'Rating', '#EAB308'], [Clock, doctor.exp, 'Experience', '#3B82F6'], [ShieldCheck, doctor.reviews, 'Reviews', '#8BAF7C']].map(([Icon, value, label, color]) => (
+                  {[[Star, doctor.rating, 'Rating', '#EAB308'], [Clock, doctor.expLabel, 'Experience', '#3B82F6'], [ShieldCheck, doctor.reviews, 'Reviews', '#8BAF7C']].map(([Icon, value, label, color]) => (
                     <div key={label} style={{ textAlign: 'center' }}>
                       <Icon size={15} color={color} style={{ marginBottom: 4 }} />
                       <div style={{ fontSize: 14, fontWeight: 800, color: '#111827' }}>{value}</div>
@@ -523,6 +525,10 @@ export default function DoctorProfilePage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 8 }}>
                 <span style={{ color: '#374151', fontWeight: 500 }}>Email</span>
                 <span style={{ color: '#8BAF7C', fontWeight: 600 }}>{doctor.email || 'Not shared'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 8 }}>
+                <span style={{ color: '#374151', fontWeight: 500 }}>Experience</span>
+                <span style={{ color: '#8BAF7C', fontWeight: 600 }}>{doctor.expLabel}</span>
               </div>
             </div>
           </div>

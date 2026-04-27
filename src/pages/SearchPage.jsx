@@ -25,7 +25,7 @@ function buildExpertProfile(item, index) {
   const specializations = item.specialization ? [item.specialization] : ['General Dietetics']
   const tintPalette = ['#eef3ef', '#f3e4d8', '#f1ede6', '#efe8d9', '#e8f0fb', '#eee6fa']
   const fee = 499 + (index % 5) * 100
-  const years = 3 + (index % 9)
+  const years = typeof item.experience === 'number' && item.experience >= 0 ? item.experience : 3 + (index % 9)
   const rating = Number((4.4 + ((index % 6) * 0.1)).toFixed(1))
 
   return {
@@ -38,6 +38,7 @@ function buildExpertProfile(item, index) {
     tint: tintPalette[index % tintPalette.length],
     fee,
     exp: years,
+    expLabel: `${years} year${years === 1 ? '' : 's'}`,
     rating,
     reviews: 20 + (index * 7),
     nextSlot: index === 0 ? 'Today, 3 PM' : index % 2 === 0 ? 'Tomorrow, 10 AM' : 'Today, 6 PM',
@@ -151,7 +152,7 @@ export default function SearchPage() {
                     <div className="queue-avatar" style={{ background: featuredDoctor.tint }}>{featuredDoctor.initials}</div>
                     <div>
                       <div className="queue-title">{featuredDoctor.name}</div>
-                      <div className="queue-sub">{featuredDoctor.exp} years Â· {featuredDoctor.specialty}</div>
+                      <div className="queue-sub">{featuredDoctor.expLabel} / {featuredDoctor.specialty}</div>
                     </div>
                     <div className="queue-meta" style={{ color: theme.gold, fontWeight: 800 }}>Rs {featuredDoctor.fee}</div>
                   </div>
@@ -254,7 +255,7 @@ export default function SearchPage() {
 
                 <div className="pill-row" style={{ marginTop: 0, marginBottom: 14 }}>
                   {doctor.tag ? <span className="badge badge-amber">{doctor.tag}</span> : null}
-                  <span className="badge badge-green">{doctor.exp} years</span>
+                  <span className="badge badge-green">{doctor.expLabel}</span>
                 </div>
 
                 <div className="timeline-list">
