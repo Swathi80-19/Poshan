@@ -3,6 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, MailCheck, RefreshCcw } from 'lucide-react'
 import poshanLogoWhite from '../assets/poshan-logo-white.svg'
 import { getVerificationStatus, resendVerificationEmail, verifyEmailToken } from '../lib/memberApi'
+import {
+  clearMemberSession,
+  clearNutritionistSession,
+  saveMemberSession,
+  saveNutritionistSession,
+} from '../lib/session'
 
 const verificationRequestCache = new Map()
 
@@ -50,7 +56,6 @@ export default function VerifyEmailPage() {
     () => (resolvedRole === 'NUTRITIONIST' ? '/admin/login' : '/login'),
     [resolvedRole]
   )
-
   useEffect(() => {
     if (!token || verifiedFromQuery) {
       return
@@ -66,11 +71,58 @@ export default function VerifyEmailPage() {
           return
         }
 
+        const resolvedResponseRole = normalizeRole(response.role || roleFromQuery)
+
         setResolvedEmail(response.email || emailFromQuery)
-        setResolvedRole(normalizeRole(response.role || roleFromQuery))
+        setResolvedRole(resolvedResponseRole)
         setMessage(response.message || 'Email verified successfully.')
         setStatus('success')
         setError('')
+
+        if (response.accessToken) {
+          const destination = resolvedResponseRole === 'NUTRITIONIST'
+            ? (response.profileCompleted ? '/admin/dashboard' : '/admin/intake')
+            : (response.profileCompleted ? '/app/dashboard' : '/app/intake')
+
+          if (resolvedResponseRole === 'NUTRITIONIST') {
+            clearMemberSession()
+            saveNutritionistSession({
+              id: response.id,
+              name: response.name,
+              username: response.username,
+              email: response.email,
+              phone: response.phone,
+              role: response.role,
+              specialization: response.specialization,
+              experience: response.experience,
+              age: response.age,
+              loginCount: response.loginCount,
+              accessToken: response.accessToken,
+              emailVerified: response.verified,
+              emailVerifiedAt: response.verifiedAt,
+              profileCompleted: response.profileCompleted,
+            })
+          } else {
+            clearNutritionistSession()
+            saveMemberSession({
+              id: response.id,
+              name: response.name,
+              username: response.username,
+              email: response.email,
+              phone: response.phone,
+              role: response.role,
+              age: response.age,
+              loginCount: response.loginCount,
+              accessToken: response.accessToken,
+              emailVerified: response.verified,
+              emailVerifiedAt: response.verifiedAt,
+              profileCompleted: response.profileCompleted,
+            })
+          }
+
+          navigate(destination)
+          return
+        }
       } catch (requestError) {
         if (emailFromQuery) {
           try {
@@ -110,7 +162,7 @@ export default function VerifyEmailPage() {
     return () => {
       active = false
     }
-  }, [token, emailFromQuery, roleFromQuery, verifiedFromQuery])
+  }, [token, emailFromQuery, roleFromQuery, verifiedFromQuery, navigate])
 
   useEffect(() => {
     if (token || !resolvedEmail || verifiedFromQuery) {
