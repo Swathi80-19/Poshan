@@ -113,20 +113,6 @@ export function loginMember(payload) {
   })
 }
 
-export function verifyPhoneOtp(payload) {
-  return request('/api/auth/verify-phone-otp', {
-    method: 'POST',
-    body: payload,
-  })
-}
-
-export function resendPhoneOtp(payload) {
-  return request('/api/auth/resend-phone-otp', {
-    method: 'POST',
-    body: payload,
-  })
-}
-
 export function registerNutritionist(payload) {
   return request('/api/auth/nutritionists/register', {
     method: 'POST',
