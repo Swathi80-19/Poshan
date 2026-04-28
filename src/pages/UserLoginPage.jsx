@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Eye, EyeOff, Lock, Mail } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, Lock, Mail, RefreshCcw, ShieldCheck } from 'lucide-react'
 import poshanLogoWhite from '../assets/poshan-logo-white.svg'
+import { createCaptchaChallenge, normalizeCaptchaValue } from '../lib/captcha'
 import { clearMemberSession, saveMemberSession } from '../lib/session'
 import {
   isEmailVerificationRequiredError,
@@ -15,14 +16,29 @@ export default function UserLoginPage() {
   const [error, setError] = useState('')
   const [verificationRequired, setVerificationRequired] = useState(false)
   const [form, setForm] = useState({ identifier: '', password: '' })
+  const [captcha, setCaptcha] = useState(() => createCaptchaChallenge())
+  const [captchaInput, setCaptchaInput] = useState('')
   const showVerificationHelp = verificationRequired && form.identifier.includes('@')
 
   useEffect(() => {
     clearMemberSession()
   }, [])
 
+  const refreshCaptcha = () => {
+    setCaptcha(createCaptchaChallenge())
+    setCaptchaInput('')
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
+
+    if (normalizeCaptchaValue(captchaInput) !== captcha.answer) {
+      setVerificationRequired(false)
+      setError('Enter the captcha exactly as shown before signing in.')
+      refreshCaptcha()
+      return
+    }
+
     setLoading(true)
     setError('')
     setVerificationRequired(false)
@@ -37,6 +53,7 @@ export default function UserLoginPage() {
       navigate(session.profileCompleted ? '/app/dashboard' : '/app/intake')
     } catch (requestError) {
       clearMemberSession()
+      refreshCaptcha()
       setVerificationRequired(isEmailVerificationRequiredError(requestError))
       setError(requestError.message || 'Unable to sign in right now.')
     } finally {
@@ -158,6 +175,54 @@ export default function UserLoginPage() {
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1.35rem' }}>
+              <div className="flex justify-between items-center">
+                <label className="form-label">Captcha check</label>
+                <button type="button" className="link-button" onClick={refreshCaptcha}>
+                  Refresh
+                </button>
+              </div>
+              <div
+                className="auth-note"
+                style={{
+                  marginBottom: '0.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.8rem',
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                  <ShieldCheck size={16} />
+                  <span style={{ fontFamily: 'monospace', fontSize: '1.05rem', letterSpacing: '0.22rem' }}>
+                    {captcha.prompt}
+                  </span>
+                </span>
+                <button type="button" className="link-button" onClick={refreshCaptcha} aria-label="Refresh captcha">
+                  <RefreshCcw size={15} />
+                </button>
+              </div>
+              <div className="form-input-icon-wrap">
+                <ShieldCheck size={18} className="form-input-icon" />
+                <input
+                  className="form-input"
+                  placeholder="Type the captcha"
+                  value={captchaInput}
+                  onChange={(event) => {
+                    if (error) {
+                      setError('')
+                    }
+
+                    setCaptchaInput(event.target.value.toUpperCase())
+                  }}
+                  autoCapitalize="characters"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  required
+                />
               </div>
             </div>
 
