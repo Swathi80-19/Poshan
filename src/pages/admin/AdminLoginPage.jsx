@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail, ShieldCheck, Smartphone } from 'lucide-react'
 import poshanLogoWhite from '../../assets/poshan-logo-white.svg'
 import { clearNutritionistSession, saveNutritionistSession } from '../../lib/session'
-import { isEmailVerificationRequiredError, loginNutritionist } from '../../lib/memberApi'
+import {
+  isEmailVerificationRequiredError,
+  loginNutritionist,
+  resendPhoneOtp,
+  verifyPhoneOtp,
+} from '../../lib/memberApi'
 
 export default function AdminLoginPage() {
   const navigate = useNavigate()
@@ -11,6 +16,8 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [verificationRequired, setVerificationRequired] = useState(false)
+  const [phoneStep, setPhoneStep] = useState(null)
+  const [otp, setOtp] = useState('')
   const [form, setForm] = useState({ identifier: '', password: '' })
   const showVerificationHelp = verificationRequired && form.identifier.includes('@')
 
@@ -30,12 +37,61 @@ export default function AdminLoginPage() {
         password: form.password,
       })
 
+      if (session.phoneVerificationRequired) {
+        setPhoneStep(session)
+        setOtp('')
+        return
+      }
+
       saveNutritionistSession(session)
-      navigate('/admin/dashboard')
+      navigate(session.profileCompleted ? '/admin/dashboard' : '/admin/intake')
     } catch (requestError) {
       clearNutritionistSession()
       setVerificationRequired(isEmailVerificationRequiredError(requestError))
       setError(requestError.message || 'Unable to sign in right now.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVerifyOtp = async (event) => {
+    event.preventDefault()
+
+    if (!phoneStep?.phoneVerificationChallengeId) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError('')
+      const session = await verifyPhoneOtp({
+        challengeId: phoneStep.phoneVerificationChallengeId,
+        otp: otp.trim(),
+      })
+      saveNutritionistSession(session)
+      navigate(session.profileCompleted ? '/admin/dashboard' : '/admin/intake')
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to verify the phone code right now.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendOtp = async () => {
+    if (!phoneStep?.phoneVerificationChallengeId) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError('')
+      const nextStep = await resendPhoneOtp({
+        challengeId: phoneStep.phoneVerificationChallengeId,
+      })
+      setPhoneStep(nextStep)
+      setOtp('')
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to resend the phone code right now.')
     } finally {
       setLoading(false)
     }
@@ -87,65 +143,107 @@ export default function AdminLoginPage() {
             </div>
           </div>
 
-          <p className="auth-copy">Sign in to continue managing appointments, members, and care conversations.</p>
+          <p className="auth-copy">
+            {phoneStep
+              ? `Enter the code sent to ${phoneStep.maskedPhone || 'your phone'} to finish sign-in.`
+              : 'Sign in to continue managing appointments, members, and care conversations.'}
+          </p>
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label className="form-label">Work email or username</label>
-              <div className="form-input-icon-wrap">
-                <Mail size={18} className="form-input-icon" />
-                <input
-                  className="form-input"
-                  value={form.identifier}
-                  onChange={(event) => {
-                    if (error) {
-                      setError('')
-                    }
+          <form onSubmit={phoneStep ? handleVerifyOtp : handleSubmit}>
+            {!phoneStep ? (
+              <>
+                <div className="form-group">
+                  <label className="form-label">Work email or username</label>
+                  <div className="form-input-icon-wrap">
+                    <Mail size={18} className="form-input-icon" />
+                    <input
+                      className="form-input"
+                      value={form.identifier}
+                      onChange={(event) => {
+                        if (error) {
+                          setError('')
+                        }
 
-                    if (verificationRequired) {
-                      setVerificationRequired(false)
-                    }
+                        if (verificationRequired) {
+                          setVerificationRequired(false)
+                        }
 
-                    setForm((current) => ({ ...current, identifier: event.target.value }))
-                  }}
-                  placeholder="doctor@clinic.com or dr_bipasha"
-                  required
-                />
-              </div>
-            </div>
+                        setForm((current) => ({ ...current, identifier: event.target.value }))
+                      }}
+                      placeholder="doctor@clinic.com or dr_bipasha"
+                      required
+                    />
+                  </div>
+                </div>
 
-            <div className="form-group" style={{ marginBottom: '1.3rem' }}>
-              <label className="form-label">Password</label>
-              <div className="form-input-icon-wrap">
-                <Lock size={18} className="form-input-icon" />
-                <input
-                  className="form-input"
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={(event) => {
-                    if (error) {
-                      setError('')
-                    }
+                <div className="form-group" style={{ marginBottom: '1.3rem' }}>
+                  <label className="form-label">Password</label>
+                  <div className="form-input-icon-wrap">
+                    <Lock size={18} className="form-input-icon" />
+                    <input
+                      className="form-input"
+                      type={showPassword ? 'text' : 'password'}
+                      value={form.password}
+                      onChange={(event) => {
+                        if (error) {
+                          setError('')
+                        }
 
-                    if (verificationRequired) {
-                      setVerificationRequired(false)
-                    }
+                        if (verificationRequired) {
+                          setVerificationRequired(false)
+                        }
 
-                    setForm((current) => ({ ...current, password: event.target.value }))
-                  }}
-                  placeholder="Enter your password"
-                  style={{ paddingRight: '3rem' }}
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((current) => !current)}
-                  style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#97a08f' }}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
+                        setForm((current) => ({ ...current, password: event.target.value }))
+                      }}
+                      placeholder="Enter your password"
+                      style={{ paddingRight: '3rem' }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((current) => !current)}
+                      style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#97a08f' }}
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
+                  <Smartphone size={16} />
+                  <span>{phoneStep.message || 'Phone verification is required to continue.'}</span>
+                </div>
+
+                {phoneStep.developmentOtp ? (
+                  <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
+                    <span className="feature-dot">&bull;</span>
+                    <span>Dev code: {phoneStep.developmentOtp}</span>
+                  </div>
+                ) : null}
+
+                <div className="form-group" style={{ marginBottom: '1.3rem' }}>
+                  <label className="form-label">Verification code</label>
+                  <div className="form-input-icon-wrap">
+                    <Smartphone size={18} className="form-input-icon" />
+                    <input
+                      className="form-input"
+                      value={otp}
+                      onChange={(event) => {
+                        if (error) {
+                          setError('')
+                        }
+
+                        setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))
+                      }}
+                      placeholder="Enter 6-digit code"
+                      required
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             {error ? (
               <div className="auth-note" style={{ marginBottom: '1.2rem', color: '#bf5f47' }}>
@@ -154,7 +252,7 @@ export default function AdminLoginPage() {
               </div>
             ) : null}
 
-            {showVerificationHelp ? (
+            {!phoneStep && showVerificationHelp ? (
               <button
                 type="button"
                 className="link-button"
@@ -167,14 +265,36 @@ export default function AdminLoginPage() {
 
             <div className="auth-actions" style={{ marginTop: 0 }}>
               <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ flex: 1 }}>
-                {loading ? 'Accessing portal...' : 'Access clinical workspace'}
+                {loading ? 'Please wait...' : phoneStep ? 'Verify phone and continue' : 'Access clinical workspace'}
                 {!loading ? <ArrowRight size={16} /> : null}
               </button>
-              <button type="button" className="btn btn-outline btn-lg" onClick={() => navigate('/nutritionist/register')}>
-                Create account
-              </button>
+              {phoneStep ? (
+                <button type="button" className="btn btn-outline btn-lg" onClick={handleResendOtp} disabled={loading}>
+                  Resend code
+                </button>
+              ) : (
+                <button type="button" className="btn btn-outline btn-lg" onClick={() => navigate('/nutritionist/register')}>
+                  Create account
+                </button>
+              )}
             </div>
           </form>
+
+          {phoneStep ? (
+            <button
+              type="button"
+              className="link-button"
+              style={{ marginTop: '1rem' }}
+              onClick={() => {
+                setPhoneStep(null)
+                setOtp('')
+                setError('')
+              }}
+            >
+              <ArrowLeft size={14} />
+              Back to credentials
+            </button>
+          ) : null}
         </div>
       </section>
     </div>

@@ -101,11 +101,13 @@ export function getMemberSession() {
     email: '',
     phone: '',
     role: 'MEMBER',
+    age: null,
     loginCount: 0,
     lastLoginAt: null,
     accessToken: '',
     emailVerified: false,
     emailVerifiedAt: null,
+    profileCompleted: false,
   })
 }
 
@@ -116,11 +118,13 @@ export function saveMemberSession({
   email = '',
   phone = '',
   role = 'MEMBER',
+  age = null,
   loginCount,
   lastLoginAt,
   accessToken = '',
   emailVerified = false,
   emailVerifiedAt = null,
+  profileCompleted = false,
 }) {
   const normalizedUsername = username || name || email.split('@')[0] || 'member'
   const counts = getLoginCounts()
@@ -137,11 +141,13 @@ export function saveMemberSession({
     email,
     phone,
     role,
+    age,
     loginCount: nextCount,
     lastLoginAt: lastLoginAt || new Date().toISOString(),
     accessToken,
     emailVerified,
     emailVerifiedAt,
+    profileCompleted,
   }
 
   if (canUseStorage()) {
@@ -200,11 +206,13 @@ export function getNutritionistSession() {
     role: 'NUTRITIONIST',
     specialization: '',
     experience: null,
+    age: null,
     loginCount: 0,
     lastLoginAt: null,
     accessToken: '',
     emailVerified: false,
     emailVerifiedAt: null,
+    profileCompleted: false,
   })
 }
 
@@ -217,11 +225,13 @@ export function saveNutritionistSession({
   role = 'NUTRITIONIST',
   specialization = '',
   experience = null,
+  age = null,
   loginCount,
   lastLoginAt,
   accessToken = '',
   emailVerified = false,
   emailVerifiedAt = null,
+  profileCompleted = false,
 }) {
   const current = getNutritionistSession()
   const normalizedUsername = username || name || email.split('@')[0] || 'nutritionist'
@@ -235,6 +245,7 @@ export function saveNutritionistSession({
     role,
     specialization,
     experience,
+    age,
     loginCount: Number.isFinite(loginCount)
       ? loginCount
       : current.username === normalizedUsername ? current.loginCount + 1 : 1,
@@ -242,6 +253,7 @@ export function saveNutritionistSession({
     accessToken,
     emailVerified,
     emailVerifiedAt,
+    profileCompleted,
   }
 
   if (canUseStorage()) {
@@ -263,6 +275,22 @@ export function clearNutritionistSession() {
   }
 
   emitSessionEvent(NUTRITIONIST_SESSION_EVENT, getNutritionistSession())
+}
+
+export function updateMemberSessionProfile(updates) {
+  const current = getMemberSession()
+  const next = { ...current, ...updates }
+  safeWriteJSON(MEMBER_SESSION_KEY, next)
+  emitSessionEvent(MEMBER_SESSION_EVENT, next)
+  return next
+}
+
+export function updateNutritionistSessionProfile(updates) {
+  const current = getNutritionistSession()
+  const next = { ...current, ...updates }
+  safeWriteJSON(NUTRITIONIST_SESSION_KEY, next)
+  emitSessionEvent(NUTRITIONIST_SESSION_EVENT, next)
+  return next
 }
 
 function getPaymentStorageKey() {

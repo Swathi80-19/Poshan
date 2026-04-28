@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Ruler, Scale, Target, UserRound } from 'lucide-react'
 import { useTracking } from '../context/TrackingContext'
-import { getMemberDisplayName } from '../lib/session'
+import { getMemberDisplayName, updateMemberSessionProfile } from '../lib/session'
 
 export default function ProfileIntakePage() {
   const navigate = useNavigate()
@@ -32,6 +32,10 @@ export default function ProfileIntakePage() {
   const handleSubmit = (event) => {
     event.preventDefault()
     updateProfile(form)
+    updateMemberSessionProfile({
+      age: Number(form.age) || null,
+      profileCompleted: true,
+    })
     navigate('/app/dashboard')
   }
 

@@ -9,8 +9,11 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import { getNutritionistPatients } from '../../lib/memberApi'
-import { getNutritionistReports, saveNutritionistReport } from '../../lib/adminData'
+import {
+  createNutritionistReport,
+  getNutritionistPatients,
+  getNutritionistReports,
+} from '../../lib/memberApi'
 import { getNutritionistSession } from '../../lib/session'
 
 const goalOptions = [
@@ -34,9 +37,24 @@ function formatDate(value) {
   }).format(new Date(value))
 }
 
-function CreateReportModal({ onClose, onSave }) {
+function normalizeReport(report) {
+  return {
+    ...report,
+    name: report.memberName,
+    goal: report.goal || 'General care',
+    sessions: report.sessionsCompleted || 0,
+    completion: report.completion || 0,
+    bmiChange: report.bmiChange || '',
+    date: report.sessionDate,
+    lastNote: report.clinicalNote || '',
+    recommendations: report.recommendations || '',
+    goalsMet: Array.isArray(report.goalsMet) ? report.goalsMet : [],
+  }
+}
+
+function CreateReportModal({ patients, onClose, onSave, saving }) {
   const [form, setForm] = useState({
-    name: '',
+    memberId: '',
     goal: '',
     sessions: '',
     completion: 50,
@@ -59,19 +77,20 @@ function CreateReportModal({ onClose, onSave }) {
   }
 
   const handleSave = () => {
-    if (!form.name.trim() || !form.goal.trim() || !form.lastNote.trim()) {
+    if (!form.memberId || !form.goal.trim() || !form.lastNote.trim()) {
       return
     }
 
     onSave({
-      ...form,
-      name: form.name.trim(),
+      memberId: Number(form.memberId),
       goal: form.goal.trim(),
-      sessions: Number(form.sessions) || 0,
+      sessionsCompleted: Number(form.sessions) || 0,
+      completion: Number(form.completion) || 0,
       bmiChange: form.bmiChange.trim(),
-      lastNote: form.lastNote.trim(),
+      sessionDate: form.date,
+      clinicalNote: form.lastNote.trim(),
       recommendations: form.recommendations.trim(),
-      id: `report-${Date.now()}`,
+      goalsMet: form.goalsMet,
     })
   }
 
@@ -90,13 +109,17 @@ function CreateReportModal({ onClose, onSave }) {
 
         <div className="tracker-form-grid tracker-form-grid-2">
           <label>
-            <span className="form-label">Patient name</span>
-            <input
+            <span className="form-label">Patient</span>
+            <select
               className="form-input"
-              value={form.name}
-              onChange={(event) => updateField('name', event.target.value)}
-              placeholder="Full name"
-            />
+              value={form.memberId}
+              onChange={(event) => updateField('memberId', event.target.value)}
+            >
+              <option value="">Select patient</option>
+              {patients.map((patient) => (
+                <option key={patient.memberId} value={patient.memberId}>{patient.name}</option>
+              ))}
+            </select>
           </label>
 
           <label>
@@ -189,9 +212,9 @@ function CreateReportModal({ onClose, onSave }) {
 
         <div className="admin-modal-actions">
           <button className="btn btn-outline" onClick={onClose}>Cancel</button>
-          <button className="btn btn-primary" onClick={handleSave}>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
             <Save size={16} />
-            Save report
+            {saving ? 'Saving...' : 'Save report'}
           </button>
         </div>
       </div>
@@ -203,40 +226,42 @@ export default function AdminReports() {
   const session = getNutritionistSession()
   const [reports, setReports] = useState([])
   const [patients, setPatients] = useState([])
-  const [loadingPatients, setLoadingPatients] = useState(true)
+  const [loading, setLoading] = useState(true)
   const [patientError, setPatientError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
-
-  useEffect(() => {
-    setReports(getNutritionistReports())
-  }, [])
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     let cancelled = false
 
     if (!session.accessToken) {
-      setLoadingPatients(false)
+      setLoading(false)
       return undefined
     }
 
     ;(async () => {
       try {
-        setLoadingPatients(true)
+        setLoading(true)
         setPatientError('')
-        const response = await getNutritionistPatients(session.accessToken)
+        const [reportResponse, patientResponse] = await Promise.all([
+          getNutritionistReports(session.accessToken),
+          getNutritionistPatients(session.accessToken),
+        ])
 
         if (!cancelled) {
-          setPatients(Array.isArray(response) ? response : [])
+          setReports(Array.isArray(reportResponse) ? reportResponse.map(normalizeReport) : [])
+          setPatients(Array.isArray(patientResponse) ? patientResponse : [])
         }
       } catch (requestError) {
         if (!cancelled) {
+          setReports([])
           setPatients([])
-          setPatientError(requestError.message || 'Unable to load patient details right now.')
+          setPatientError(requestError.message || 'Unable to load report details right now.')
         }
       } finally {
         if (!cancelled) {
-          setLoadingPatients(false)
+          setLoading(false)
         }
       }
     })()
@@ -246,17 +271,28 @@ export default function AdminReports() {
     }
   }, [session.accessToken])
 
-  const handleSave = (report) => {
-    const saved = saveNutritionistReport(report)
-    setReports((current) => [saved, ...current.filter((item) => item.id !== saved.id)])
-    setShowModal(false)
+  const handleSave = async (report) => {
+    if (!session.accessToken) {
+      return
+    }
+
+    try {
+      setSaving(true)
+      const saved = await createNutritionistReport(session.accessToken, report)
+      setReports((current) => [normalizeReport(saved), ...current])
+      setShowModal(false)
+    } catch (requestError) {
+      setPatientError(requestError.message || 'Unable to save the report right now.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   const averageCompletion = reports.length
     ? Math.round(reports.reduce((sum, item) => sum + (Number(item.completion) || 0), 0) / reports.length)
     : 0
 
-  const uniquePatients = new Set(reports.map((item) => item.name.trim().toLowerCase()).filter(Boolean)).size
+  const uniquePatients = new Set(reports.map((item) => item.name?.trim()?.toLowerCase()).filter(Boolean)).size
   const latestReport = reports[0]
 
   const goalBreakdown = useMemo(() => {
@@ -273,7 +309,7 @@ export default function AdminReports() {
   }, [reports])
 
   const statCards = [
-    { label: 'Saved reports', value: reports.length, foot: 'Reports created in this workspace', tone: '#eee6fa', accent: '#7a61b8', icon: FileText },
+    { label: 'Saved reports', value: reports.length, foot: 'Reports stored in the backend', tone: '#eee6fa', accent: '#7a61b8', icon: FileText },
     { label: 'Tracked patients', value: patients.length, foot: 'Members currently connected to your practice', tone: '#e7efe0', accent: '#73955f', icon: Users },
     { label: 'Avg completion', value: `${averageCompletion}%`, foot: 'Across saved reports', tone: '#e8f0fb', accent: '#4d82b7', icon: TrendingUp },
     { label: 'Patients documented', value: uniquePatients, foot: 'Unique people with saved reports', tone: '#f8eccc', accent: '#c9953b', icon: FileText },
@@ -281,7 +317,7 @@ export default function AdminReports() {
 
   return (
     <div className="animate-fade">
-      {showModal ? <CreateReportModal onClose={() => setShowModal(false)} onSave={handleSave} /> : null}
+      {showModal ? <CreateReportModal patients={patients} onClose={() => setShowModal(false)} onSave={handleSave} saving={saving} /> : null}
 
       <div className="admin-page-header">
         <div>
@@ -294,7 +330,7 @@ export default function AdminReports() {
             <Download size={16} />
             Export all
           </button>
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+          <button className="btn btn-primary" onClick={() => setShowModal(true)} disabled={!patients.length}>
             <Plus size={16} />
             Create report
           </button>
@@ -310,7 +346,7 @@ export default function AdminReports() {
                 Capture patient progress, clinical notes, and next-step guidance in a clear format.
               </h2>
               <p className="hero-copy">
-                Use reports to keep follow-up organized, document care outcomes, and maintain a readable history for each member.
+                The local dummy report store has been removed. This page now reads and writes only real nutritionist reports.
               </p>
 
               <div className="pill-row">
@@ -365,7 +401,7 @@ export default function AdminReports() {
           ))}
         </section>
 
-        {loadingPatients ? <div className="admin-note">Loading patient context...</div> : null}
+        {loading ? <div className="admin-note">Loading report workspace...</div> : null}
         {patientError ? <div className="admin-note">{patientError}</div> : null}
 
         <div className="g-2">
@@ -419,7 +455,7 @@ export default function AdminReports() {
                     </div>
                     <div>
                       <div className="signal-title">{patient.name}</div>
-                      <div className="signal-sub">{patient.goalFocus || patient.goal || 'Goal not set'}</div>
+                      <div className="signal-sub">{patient.goalFocus || 'Goal not set'}</div>
                     </div>
                     <div className="signal-meta">{patient.sessions || 0} sessions</div>
                   </div>
@@ -438,7 +474,7 @@ export default function AdminReports() {
               </p>
             </div>
 
-            <button className="btn btn-secondary" onClick={() => setShowModal(true)}>
+            <button className="btn btn-secondary" onClick={() => setShowModal(true)} disabled={!patients.length}>
               <Plus size={16} />
               New report
             </button>

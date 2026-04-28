@@ -113,6 +113,20 @@ export function loginMember(payload) {
   })
 }
 
+export function verifyPhoneOtp(payload) {
+  return request('/api/auth/verify-phone-otp', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
+export function resendPhoneOtp(payload) {
+  return request('/api/auth/resend-phone-otp', {
+    method: 'POST',
+    body: payload,
+  })
+}
+
 export function registerNutritionist(payload) {
   return request('/api/auth/nutritionists/register', {
     method: 'POST',
@@ -191,6 +205,18 @@ export function getNutritionistDashboard(token) {
   return request('/api/nutritionists/me/dashboard', { token })
 }
 
+export function getNutritionistProfile(token) {
+  return request('/api/nutritionists/me/profile', { token })
+}
+
+export function updateNutritionistProfile(token, payload) {
+  return request('/api/nutritionists/me/profile', {
+    method: 'PUT',
+    token,
+    body: payload,
+  })
+}
+
 export function getMemberConversations(token) {
   return request('/api/messages/member', { token })
 }
@@ -218,6 +244,14 @@ export function getNutritionistMessageThread(token, memberId) {
 export function sendNutritionistMessage(token, memberId, payload) {
   return request(`/api/messages/nutritionist/${memberId}`, {
     method: 'POST',
+    token,
+    body: payload,
+  })
+}
+
+export function updateNutritionistChatAccess(token, memberId, payload) {
+  return request(`/api/messages/nutritionist/${memberId}/chat-access`, {
+    method: 'PUT',
     token,
     body: payload,
   })
@@ -263,5 +297,29 @@ export function deleteMemberAccount(token) {
   return request('/api/member/account', {
     method: 'DELETE',
     token,
+  })
+}
+
+export function createPayment(token, payload) {
+  return request('/api/payments', {
+    method: 'POST',
+    token,
+    body: payload,
+  })
+}
+
+export function getNutritionistPayments(token) {
+  return request('/api/payments/nutritionist', { token })
+}
+
+export function getNutritionistReports(token) {
+  return request('/api/reports/nutritionist', { token })
+}
+
+export function createNutritionistReport(token, payload) {
+  return request('/api/reports', {
+    method: 'POST',
+    token,
+    body: payload,
   })
 }

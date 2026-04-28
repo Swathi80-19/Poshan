@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Bell,
   Check,
@@ -10,7 +10,8 @@ import {
   Star,
   UserRound,
 } from 'lucide-react'
-import { getNutritionistSession } from '../../lib/session'
+import { getNutritionistProfile, updateNutritionistProfile } from '../../lib/memberApi'
+import { getNutritionistSession, updateNutritionistSessionProfile } from '../../lib/session'
 
 function buildDefaultBio(displayName, specialization) {
   return `${displayName} supports members through ${specialization.toLowerCase()} with a focus on clear plans, practical follow-through, and consistent care. This profile helps members understand your background before they book a consultation.`
@@ -22,8 +23,52 @@ export default function AdminProfile() {
   const displayName = session.name || session.username || 'Nutritionist'
   const specialization = session.specialization || 'Clinical Nutrition'
   const experience = typeof session.experience === 'number' ? session.experience : null
-  const [bio, setBio] = useState(() => buildDefaultBio(displayName, specialization))
+  const [bio, setBio] = useState('')
+  const [age, setAge] = useState(session.age || '')
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   const initial = displayName.charAt(0).toUpperCase()
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!session.accessToken) {
+      setLoading(false)
+      setBio(buildDefaultBio(displayName, specialization))
+      return undefined
+    }
+
+    ;(async () => {
+      try {
+        setLoading(true)
+        setError('')
+        const profile = await getNutritionistProfile(session.accessToken)
+
+        if (!cancelled) {
+          setBio(profile.bio || buildDefaultBio(displayName, specialization))
+          setAge(profile.age || '')
+          updateNutritionistSessionProfile({
+            age: profile.age ?? null,
+            profileCompleted: Boolean(profile.profileCompleted),
+          })
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setBio(buildDefaultBio(displayName, specialization))
+          setError(requestError.message || 'Unable to load your profile right now.')
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [displayName, session.accessToken, specialization])
 
   const profileStats = [
     { label: 'Specialization', value: specialization },
@@ -35,7 +80,46 @@ export default function AdminProfile() {
     { label: 'Username', value: session.username || 'Not shared', icon: UserRound },
     { label: 'Email', value: session.email || 'Not shared', icon: Mail },
     { label: 'Phone', value: session.phone || 'Not shared', icon: Phone },
+    { label: 'Age', value: age || 'Not shared', icon: UserRound },
   ]
+
+  const dummyHighlights = useMemo(() => ([
+    'Clinical intake planning',
+    'Habit-first follow-through',
+    'Meal structure simplification',
+    'Progress review check-ins',
+  ]), [])
+
+  const handleToggleEdit = async () => {
+    if (!editMode) {
+      setEditMode(true)
+      return
+    }
+
+    if (!session.accessToken) {
+      return
+    }
+
+    try {
+      setSaving(true)
+      setError('')
+      const response = await updateNutritionistProfile(session.accessToken, {
+        age: Number(age) || null,
+        bio: bio.trim() || null,
+      })
+      updateNutritionistSessionProfile({
+        age: response.age ?? null,
+        profileCompleted: Boolean(response.profileCompleted),
+      })
+      setAge(response.age || '')
+      setBio(response.bio || buildDefaultBio(displayName, specialization))
+      setEditMode(false)
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to save your profile right now.')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="animate-fade">
@@ -51,10 +135,11 @@ export default function AdminProfile() {
           </button>
           <button
             className={editMode ? 'btn btn-primary' : 'btn btn-outline'}
-            onClick={() => setEditMode((current) => !current)}
+            onClick={handleToggleEdit}
+            disabled={saving}
           >
             {editMode ? <Check size={16} /> : <Edit2 size={16} />}
-            {editMode ? 'Save changes' : 'Edit profile'}
+            {saving ? 'Saving...' : editMode ? 'Save changes' : 'Edit profile'}
           </button>
         </div>
       </div>
@@ -104,12 +189,30 @@ export default function AdminProfile() {
                 </div>
               </div>
 
+              {loading ? <div className="admin-note">Loading profile details...</div> : null}
+              {error ? <div className="admin-note">{error}</div> : null}
+
               {editMode ? (
-                <textarea
-                  className="form-input tracker-textarea"
-                  value={bio}
-                  onChange={(event) => setBio(event.target.value)}
-                />
+                <div className="tracker-form-grid" style={{ gap: 14 }}>
+                  <label className="form-group">
+                    <span className="form-label">Age</span>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="18"
+                      value={age}
+                      onChange={(event) => setAge(event.target.value)}
+                    />
+                  </label>
+                  <label className="form-group">
+                    <span className="form-label">Bio</span>
+                    <textarea
+                      className="form-input tracker-textarea"
+                      value={bio}
+                      onChange={(event) => setBio(event.target.value)}
+                    />
+                  </label>
+                </div>
               ) : (
                 <p className="hero-copy" style={{ marginTop: 0 }}>{bio}</p>
               )}
@@ -125,6 +228,9 @@ export default function AdminProfile() {
 
               <div className="pill-row">
                 <span className="badge badge-green">{specialization}</span>
+                {dummyHighlights.map((item) => (
+                  <span key={item} className="badge badge-gray">{item}</span>
+                ))}
               </div>
             </section>
 
@@ -171,7 +277,7 @@ export default function AdminProfile() {
               </div>
 
               <div className="admin-note" style={{ marginTop: '1rem' }}>
-                Member feedback and additional credentials will appear here when that information becomes available.
+                Dummy profile highlights are shown here now so the nutritionist profile feels populated even before richer practice metadata is added.
               </div>
             </section>
           </div>

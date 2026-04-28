@@ -4,6 +4,7 @@ import {
   getNutritionistConversations,
   getNutritionistMessageThread,
   sendNutritionistMessage,
+  updateNutritionistChatAccess,
 } from '../../lib/memberApi'
 import { getNutritionistSession } from '../../lib/session'
 
@@ -58,6 +59,7 @@ export default function AdminMessages() {
   const [draft, setDraft] = useState('')
   const [loading, setLoading] = useState(true)
   const [threadLoading, setThreadLoading] = useState(false)
+  const [unlocking, setUnlocking] = useState(false)
   const [error, setError] = useState('')
   const [conversations, setConversations] = useState([])
   const [thread, setThread] = useState(null)
@@ -162,7 +164,7 @@ export default function AdminMessages() {
   }, [filtered, selected])
 
   const sendMessage = async () => {
-    if (!draft.trim() || !thread?.active || !session.accessToken) return
+    if (!draft.trim() || !thread?.chatUnlocked || !session.accessToken) return
 
     try {
       const sent = await sendNutritionistMessage(session.accessToken, thread.counterpartId, { text: draft.trim() })
@@ -183,8 +185,36 @@ export default function AdminMessages() {
     }
   }
 
-  const activeChats = conversations.filter((item) => item.active).length
+  const unlockedChats = conversations.filter((item) => item.chatUnlocked).length
   const totalMessages = thread?.messages?.length || 0
+
+  const setChatAccess = async (unlocked) => {
+    if (!thread?.counterpartId || !session.accessToken) {
+      return
+    }
+
+    try {
+      setUnlocking(true)
+      setError('')
+      const response = await updateNutritionistChatAccess(session.accessToken, thread.counterpartId, { unlocked })
+      const nextThread = {
+        ...response,
+        id: String(response.counterpartId),
+        initials: getInitials(response.counterpartName || 'Member'),
+        appointmentLabel: [response.appointmentDateLabel, response.appointmentTimeLabel].filter(Boolean).join(', '),
+      }
+      setThread(nextThread)
+      setConversations((current) => current.map((item) => (
+        item.id === String(response.counterpartId)
+          ? { ...item, bookingActive: response.bookingActive, chatUnlocked: response.chatUnlocked }
+          : item
+      )))
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to update chat access right now.')
+    } finally {
+      setUnlocking(false)
+    }
+  }
 
   return (
     <div className="animate-fade">
@@ -195,7 +225,7 @@ export default function AdminMessages() {
         </div>
 
         <div className="page-header-right">
-          <span className="badge badge-green">{activeChats} active threads</span>
+          <span className="badge badge-green">{unlockedChats} unlocked threads</span>
           <button className="icon-btn">
             <Bell size={18} />
           </button>
@@ -222,6 +252,7 @@ export default function AdminMessages() {
             </div>
             <div className="pill-row">
               <span className="badge badge-green">{conversations.length} member threads</span>
+              <span className="badge badge-gray">{unlockedChats} unlocked</span>
               <span className="badge badge-amber">{totalMessages} messages in current thread</span>
             </div>
           </div>
@@ -230,7 +261,7 @@ export default function AdminMessages() {
         <section className="summary-grid">
           {[
             { label: 'Live threads', value: conversations.length, foot: 'Booked relationships available for chat', tone: '#e7efe0', accent: '#73955f' },
-            { label: 'Active consults', value: activeChats, foot: 'Upcoming appointment threads still open', tone: '#e8f0fb', accent: '#4d82b7' },
+            { label: 'Unlocked chats', value: unlockedChats, foot: 'Threads you have manually unlocked', tone: '#e8f0fb', accent: '#4d82b7' },
             { label: 'Current thread', value: totalMessages, foot: activeConversation?.counterpartName || 'No member selected', tone: '#f8eccc', accent: '#c9953b' },
           ].map((item) => (
             <article key={item.label} className="metric-card">
@@ -291,7 +322,8 @@ export default function AdminMessages() {
                     </div>
                     <div style={{ color: '#7f8776', fontSize: 13, lineHeight: 1.5 }}>{conversation.lastMessage}</div>
                     <div className="pill-row" style={{ marginTop: 10 }}>
-                      {conversation.active ? <span className="badge badge-green">Live consult</span> : <span className="badge badge-gray">Archive only</span>}
+                      {conversation.chatUnlocked ? <span className="badge badge-green">Unlocked</span> : <span className="badge badge-gray">Locked</span>}
+                      {conversation.bookingActive ? <span className="badge badge-amber">Upcoming consult</span> : <span className="badge badge-gray">Past consult</span>}
                       {conversation.appointmentLabel ? <span className="badge badge-amber">{conversation.appointmentLabel}</span> : null}
                     </div>
                   </button>
@@ -312,7 +344,17 @@ export default function AdminMessages() {
                 </div>
               </div>
               <div style={{ flex: 1 }} />
-              {thread?.active ? <span className="badge badge-green">Responding live</span> : <span className="badge badge-gray">No active booking</span>}
+              {thread?.chatUnlocked ? <span className="badge badge-green">Chat unlocked</span> : <span className="badge badge-gray">Chat locked</span>}
+              {thread ? (
+                <button
+                  type="button"
+                  className={thread.chatUnlocked ? 'btn btn-outline' : 'btn btn-primary'}
+                  onClick={() => setChatAccess(!thread.chatUnlocked)}
+                  disabled={unlocking}
+                >
+                  {unlocking ? 'Saving...' : thread.chatUnlocked ? 'Lock chat' : 'Unlock chat'}
+                </button>
+              ) : null}
             </div>
 
             <div className="messages-thread-body" style={{ flex: 1, overflowY: 'auto', padding: '22px 24px', background: 'rgba(246,240,229,0.45)' }}>
@@ -335,7 +377,9 @@ export default function AdminMessages() {
                     <strong style={{ color: '#2d3827' }}>Thread opened</strong>
                   </div>
                   <div style={{ color: '#5f6958', lineHeight: 1.6 }}>
-                    {thread.counterpartName} has a booked appointment. Send the first message to begin the conversation.
+                    {thread.chatUnlocked
+                      ? `${thread.counterpartName} has a booked appointment. Send the first message to begin the conversation.`
+                      : `${thread.counterpartName} has a booked appointment. Unlock chat manually when you want messaging to begin.`}
                   </div>
                 </div>
               ) : null}
@@ -363,7 +407,7 @@ export default function AdminMessages() {
               <div ref={endRef} />
             </div>
 
-            {thread?.active ? (
+            {thread?.chatUnlocked ? (
               <div className="messages-composer" style={{ padding: 18, borderTop: '1px solid rgba(92,120,74,0.08)', display: 'flex', gap: 10, alignItems: 'center' }}>
                 <input
                   value={draft}
@@ -385,7 +429,7 @@ export default function AdminMessages() {
             ) : (
               <div style={{ padding: 18, borderTop: '1px solid rgba(92,120,74,0.08)' }}>
                 <div className="auth-note">
-                  <span>This thread becomes interactive when there is an upcoming appointment.</span>
+                  <span>This thread stays read-only until you unlock chat manually.</span>
                 </div>
               </div>
             )}

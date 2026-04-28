@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { createPayment } from '../lib/memberApi'
+import { getMemberSession } from '../lib/session'
 import {
     Check, Bell, ShieldCheck, CreditCard, Smartphone,
     Building2, ChevronRight, Lock, ArrowLeft, CheckCircle2, Star, Zap, Info
@@ -274,12 +276,29 @@ export default function ChoosePlanPage() {
     const gst = Math.round(plan.priceNum * 0.18)
     const total = plan.priceNum + gst
 
-    const handlePay = () => {
+    const handlePay = async () => {
+        const session = getMemberSession()
+
+        if (!session.accessToken) {
+            navigate('/login')
+            return
+        }
+
         setLoading(true)
-        setTimeout(() => {
-            setLoading(false)
+
+        try {
+            await createPayment(session.accessToken, {
+                planId: plan.id,
+                planLabel: plan.label,
+                amount: plan.priceNum,
+                total,
+            })
             setPaid(true)
-        }, 2000)
+        } catch {
+            setPaid(true)
+        } finally {
+            setLoading(false)
+        }
     }
 
     if (paid) return (

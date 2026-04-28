@@ -160,7 +160,7 @@ export default function MessagesPage() {
   }, [filtered, selected])
 
   const sendMessage = async () => {
-    if (!draft.trim() || !thread?.active || !session.accessToken) return
+    if (!draft.trim() || !thread?.chatUnlocked || !session.accessToken) return
 
     try {
       const sent = await sendMemberMessage(session.accessToken, thread.counterpartId, { text: draft.trim() })
@@ -186,7 +186,7 @@ export default function MessagesPage() {
     }
   }
 
-  const activeChats = conversations.filter((item) => item.active).length
+  const unlockedChats = conversations.filter((item) => item.chatUnlocked).length
 
   return (
     <div className="animate-fade messages-page">
@@ -196,7 +196,7 @@ export default function MessagesPage() {
           <span className="page-header-title">Messages</span>
         </div>
         <div className="page-header-right">
-          <span className="badge badge-green">{activeChats} active chats</span>
+          <span className="badge badge-green">{unlockedChats} unlocked chats</span>
           <button className="header-icon-btn"><Bell size={18} /></button>
           <div className="header-avatar">{initial}</div>
         </div>
@@ -221,7 +221,7 @@ export default function MessagesPage() {
             </div>
             <div className="pill-row">
               <span className="badge badge-green">{conversations.length} total threads</span>
-              <span className="badge badge-gray">Shared history</span>
+              <span className="badge badge-gray">{unlockedChats} unlocked by nutritionists</span>
             </div>
           </div>
         </section>
@@ -272,7 +272,8 @@ export default function MessagesPage() {
                     </div>
                     <div style={{ color: '#7f8776', fontSize: 13, lineHeight: 1.5 }}>{conversation.lastMessage}</div>
                     <div className="pill-row" style={{ marginTop: 10 }}>
-                      {conversation.active ? <span className="badge badge-green">Chat unlocked</span> : <span className="badge badge-gray">Read only</span>}
+                      {conversation.chatUnlocked ? <span className="badge badge-green">Chat unlocked</span> : <span className="badge badge-gray">Locked by nutritionist</span>}
+                      {conversation.bookingActive ? <span className="badge badge-amber">Upcoming consult</span> : <span className="badge badge-gray">Past consult</span>}
                       {conversation.appointmentLabel ? <span className="badge badge-amber">{conversation.appointmentLabel}</span> : null}
                     </div>
                   </button>
@@ -293,7 +294,7 @@ export default function MessagesPage() {
                 </div>
               </div>
               <div style={{ flex: 1 }} />
-              {thread?.active ? <span className="badge badge-green">Active chat</span> : <span className="badge badge-gray">No active booking</span>}
+              {thread?.chatUnlocked ? <span className="badge badge-green">Chat unlocked</span> : <span className="badge badge-gray">Waiting for unlock</span>}
               <button className="header-icon-btn" onClick={() => navigate('/app/activity')}><Calendar size={16} /></button>
             </div>
 
@@ -319,7 +320,9 @@ export default function MessagesPage() {
                     <strong style={{ color: '#2d3827' }}>Thread ready</strong>
                   </div>
                   <div style={{ color: '#5f6958', lineHeight: 1.6 }}>
-                    Your booking with {thread.counterpartName} is confirmed. Send the first message to begin your care conversation.
+                    {thread.chatUnlocked
+                      ? `Your booking with ${thread.counterpartName} is confirmed. Send the first message to begin your care conversation.`
+                      : `${thread.counterpartName} has not unlocked chat yet. You can read the thread here once messaging is enabled.`}
                   </div>
                 </div>
               ) : null}
@@ -347,7 +350,7 @@ export default function MessagesPage() {
               <div ref={endRef} />
             </div>
 
-            {thread?.active ? (
+            {thread?.chatUnlocked ? (
               <div className="messages-composer" style={{ padding: 18, borderTop: '1px solid rgba(92,120,74,0.08)', display: 'flex', gap: 10, alignItems: 'center' }}>
                 <input
                   value={draft}
@@ -370,11 +373,13 @@ export default function MessagesPage() {
               <div style={{ padding: 18, borderTop: '1px solid rgba(92,120,74,0.08)' }}>
                 <div className="auth-note">
                   <Lock size={16} />
-                  <span>Chat opens after you have an upcoming appointment.</span>
+                  <span>The nutritionist must unlock this chat manually before you can send messages.</span>
                 </div>
-                <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => navigate('/app/search')}>
-                  Book appointment
-                </button>
+                {!conversations.length ? (
+                  <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={() => navigate('/app/search')}>
+                    Book appointment
+                  </button>
+                ) : null}
               </div>
             )}
           </section>

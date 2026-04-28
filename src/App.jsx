@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import './index.css'
 
 
@@ -31,13 +31,23 @@ import AdminMessages from './pages/admin/AdminMessages'
 import AdminPayments from './pages/admin/AdminPayments'
 import AdminReports from './pages/admin/AdminReports'
 import AdminProfile from './pages/admin/AdminProfile'
+import AdminProfileIntakePage from './pages/admin/AdminProfileIntakePage'
 import { getMemberSession, getNutritionistSession } from './lib/session'
 
 function RequireMemberAuth({ children }) {
   const session = getMemberSession()
+  const location = useLocation()
 
   if (!session.accessToken) {
     return <Navigate to="/login" replace />
+  }
+
+  if (!session.profileCompleted && location.pathname !== '/app/intake') {
+    return <Navigate to="/app/intake" replace />
+  }
+
+  if (session.profileCompleted && location.pathname === '/app/intake') {
+    return <Navigate to="/app/dashboard" replace />
   }
 
   return children
@@ -45,9 +55,18 @@ function RequireMemberAuth({ children }) {
 
 function RequireNutritionistAuth({ children }) {
   const session = getNutritionistSession()
+  const location = useLocation()
 
   if (!session.accessToken) {
     return <Navigate to="/admin/login" replace />
+  }
+
+  if (!session.profileCompleted && location.pathname !== '/admin/intake') {
+    return <Navigate to="/admin/intake" replace />
+  }
+
+  if (session.profileCompleted && location.pathname === '/admin/intake') {
+    return <Navigate to="/admin/dashboard" replace />
   }
 
   return children
@@ -102,6 +121,7 @@ function App() {
           )}
         >
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="intake" element={<AdminProfileIntakePage />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="patients" element={<AdminPatients />} />
           <Route path="appointments" element={<AdminAppointments />} />
