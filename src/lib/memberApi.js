@@ -79,15 +79,15 @@ async function request(path, { method = 'GET', body, token } = {}) {
       ...(body ? { body: JSON.stringify(body) } : {}),
     })
   } catch {
-    const backendTarget = API_BASE_URL || 'the local /api backend'
-    throw new Error(`Unable to reach ${backendTarget}. Make sure the backend server is running.`)
+    const serviceTarget = API_BASE_URL || 'the Poshan service'
+    throw new Error(`Unable to connect to ${serviceTarget}. Please try again in a moment.`)
   }
 
   const payload = await parseResponse(response)
 
   if (!response.ok) {
     if (isLikelyDevProxyFailure(response, payload)) {
-      throw new Error('Unable to reach the backend server at http://localhost:8080. Start the Spring Boot backend and try again.')
+      throw new Error('Unable to connect to Poshan at http://localhost:8080. Start the service and try again.')
     }
 
     const error = new Error(toErrorMessage(payload, `Request failed with status ${response.status}`))
@@ -322,4 +322,35 @@ export function createNutritionistReport(token, payload) {
     token,
     body: payload,
   })
+}
+
+export async function downloadNutritionistReportAttachment(token, reportId) {
+  let response
+
+  try {
+    response = await fetch(`${API_BASE_URL}/api/reports/${reportId}/attachment`, {
+      method: 'GET',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    })
+  } catch {
+    const serviceTarget = API_BASE_URL || 'the Poshan service'
+    throw new Error(`Unable to connect to ${serviceTarget}. Please try again in a moment.`)
+  }
+
+  if (!response.ok) {
+    const payload = await parseResponse(response)
+    const error = new Error(toErrorMessage(payload, `Request failed with status ${response.status}`))
+    error.status = response.status
+    error.payload = payload
+    throw error
+  }
+
+  const blob = await response.blob()
+  const disposition = response.headers.get('content-disposition') || ''
+  const match = disposition.match(/filename=\"?([^"]+)\"?/)
+  const fileName = match?.[1] || 'report-file'
+
+  return { blob, fileName }
 }

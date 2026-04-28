@@ -59,7 +59,7 @@ const workflowSteps = [
   {
     id: '04',
     label: 'Continue',
-    title: 'Enter the right workspace.',
+    title: 'Enter the right login.',
     text: 'Members and nutritionists move into the login that matches their role without losing the context of the record.',
     state: 'Ready to enter',
     width: '52%',

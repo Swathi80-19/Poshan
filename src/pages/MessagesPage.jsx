@@ -123,7 +123,7 @@ export default function MessagesPage() {
       } catch (requestError) {
         if (!cancelled) {
           setThread(null)
-          setError(requestError.message || 'Unable to open this thread right now.')
+          setError(requestError.message || 'Unable to open this chat right now.')
         }
       } finally {
         if (!cancelled) {
@@ -220,7 +220,7 @@ export default function MessagesPage() {
               </p>
             </div>
             <div className="pill-row">
-              <span className="badge badge-green">{conversations.length} total threads</span>
+              <span className="badge badge-green">{conversations.length} total chats</span>
               <span className="badge badge-gray">{unlockedChats} unlocked by nutritionists</span>
             </div>
           </div>
@@ -299,7 +299,7 @@ export default function MessagesPage() {
             </div>
 
             <div className="messages-thread-body" style={{ flex: 1, overflowY: 'auto', padding: '22px 24px', background: 'rgba(246,240,229,0.45)' }}>
-              {threadLoading ? <div className="admin-note">Loading thread...</div> : null}
+              {threadLoading ? <div className="admin-note">Loading chat...</div> : null}
               {!threadLoading && !thread ? (
                 <div className="admin-note">No conversation is available yet.</div>
               ) : null}
@@ -317,12 +317,12 @@ export default function MessagesPage() {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                     <Sparkles size={16} color="#73955f" />
-                    <strong style={{ color: '#2d3827' }}>Thread ready</strong>
+                    <strong style={{ color: '#2d3827' }}>Chat ready</strong>
                   </div>
                   <div style={{ color: '#5f6958', lineHeight: 1.6 }}>
                     {thread.chatUnlocked
                       ? `Your booking with ${thread.counterpartName} is confirmed. Send the first message to begin your care conversation.`
-                      : `${thread.counterpartName} has not unlocked chat yet. You can read the thread here once messaging is enabled.`}
+                      : `${thread.counterpartName} has not unlocked chat yet. You can open this chat here once messaging is enabled.`}
                   </div>
                 </div>
               ) : null}

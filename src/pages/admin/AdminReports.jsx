@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import {
   createNutritionistReport,
+  downloadNutritionistReportAttachment,
   getNutritionistPatients,
   getNutritionistReports,
 } from '../../lib/memberApi'
@@ -49,7 +50,49 @@ function normalizeReport(report) {
     lastNote: report.clinicalNote || '',
     recommendations: report.recommendations || '',
     goalsMet: Array.isArray(report.goalsMet) ? report.goalsMet : [],
+    hasAttachment: Boolean(report.hasAttachment),
+    attachmentFileName: report.attachmentFileName || '',
+    attachmentContentType: report.attachmentContentType || '',
+    attachmentSize: report.attachmentSize || 0,
   }
+}
+
+function formatFileSize(bytes) {
+  const value = Number(bytes) || 0
+
+  if (value >= 1024 * 1024) {
+    return `${(value / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  if (value >= 1024) {
+    return `${Math.round(value / 1024)} KB`
+  }
+
+  return `${value} B`
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : ''
+      const base64 = result.includes(',') ? result.split(',')[1] : result
+      resolve(base64)
+    }
+    reader.onerror = () => reject(new Error('Unable to read this file right now.'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function triggerFileDownload(blob, fileName) {
+  const objectUrl = window.URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = objectUrl
+  anchor.download = fileName
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.URL.revokeObjectURL(objectUrl)
 }
 
 function CreateReportModal({ patients, onClose, onSave, saving }) {
@@ -63,7 +106,9 @@ function CreateReportModal({ patients, onClose, onSave, saving }) {
     date: new Date().toISOString().split('T')[0],
     goalsMet: [],
     recommendations: '',
+    attachment: null,
   })
+  const [fileError, setFileError] = useState('')
 
   const updateField = (key, value) => setForm((current) => ({ ...current, [key]: value }))
 
@@ -74,6 +119,33 @@ function CreateReportModal({ patients, onClose, onSave, saving }) {
         ? current.goalsMet.filter((item) => item !== goal)
         : [...current.goalsMet, goal],
     }))
+  }
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      setForm((current) => ({ ...current, attachment: null }))
+      setFileError('')
+      return
+    }
+
+    try {
+      setFileError('')
+      const attachmentBase64 = await readFileAsBase64(file)
+      setForm((current) => ({
+        ...current,
+        attachment: {
+          attachmentFileName: file.name,
+          attachmentContentType: file.type || 'application/octet-stream',
+          attachmentSize: file.size,
+          attachmentBase64,
+        },
+      }))
+    } catch (requestError) {
+      setForm((current) => ({ ...current, attachment: null }))
+      setFileError(requestError.message || 'Unable to attach this file right now.')
+    }
   }
 
   const handleSave = () => {
@@ -91,6 +163,10 @@ function CreateReportModal({ patients, onClose, onSave, saving }) {
       clinicalNote: form.lastNote.trim(),
       recommendations: form.recommendations.trim(),
       goalsMet: form.goalsMet,
+      attachmentFileName: form.attachment?.attachmentFileName || null,
+      attachmentContentType: form.attachment?.attachmentContentType || null,
+      attachmentSize: form.attachment?.attachmentSize || null,
+      attachmentBase64: form.attachment?.attachmentBase64 || null,
     })
   }
 
@@ -210,6 +286,24 @@ function CreateReportModal({ patients, onClose, onSave, saving }) {
           />
         </label>
 
+        <label>
+          <span className="form-label">Upload report file</span>
+          <input
+            className="form-input"
+            type="file"
+            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+            onChange={handleFileChange}
+          />
+        </label>
+
+        {form.attachment ? (
+          <div className="admin-note">
+            Attached: {form.attachment.attachmentFileName} ({formatFileSize(form.attachment.attachmentSize)})
+          </div>
+        ) : null}
+
+        {fileError ? <div className="admin-note">{fileError}</div> : null}
+
         <div className="admin-modal-actions">
           <button className="btn btn-outline" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
@@ -231,6 +325,7 @@ export default function AdminReports() {
   const [showModal, setShowModal] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [downloadingId, setDownloadingId] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -288,6 +383,23 @@ export default function AdminReports() {
     }
   }
 
+  const handleDownloadAttachment = async (report) => {
+    if (!session.accessToken || !report?.id || !report.hasAttachment) {
+      return
+    }
+
+    try {
+      setDownloadingId(report.id)
+      setPatientError('')
+      const { blob, fileName } = await downloadNutritionistReportAttachment(session.accessToken, report.id)
+      triggerFileDownload(blob, fileName)
+    } catch (requestError) {
+      setPatientError(requestError.message || 'Unable to download the report file right now.')
+    } finally {
+      setDownloadingId(null)
+    }
+  }
+
   const averageCompletion = reports.length
     ? Math.round(reports.reduce((sum, item) => sum + (Number(item.completion) || 0), 0) / reports.length)
     : 0
@@ -309,7 +421,7 @@ export default function AdminReports() {
   }, [reports])
 
   const statCards = [
-    { label: 'Saved reports', value: reports.length, foot: 'Reports stored in the backend', tone: '#eee6fa', accent: '#7a61b8', icon: FileText },
+    { label: 'Saved reports', value: reports.length, foot: 'Reports available in your app', tone: '#eee6fa', accent: '#7a61b8', icon: FileText },
     { label: 'Tracked patients', value: patients.length, foot: 'Members currently connected to your practice', tone: '#e7efe0', accent: '#73955f', icon: Users },
     { label: 'Avg completion', value: `${averageCompletion}%`, foot: 'Across saved reports', tone: '#e8f0fb', accent: '#4d82b7', icon: TrendingUp },
     { label: 'Patients documented', value: uniquePatients, foot: 'Unique people with saved reports', tone: '#f8eccc', accent: '#c9953b', icon: FileText },
@@ -341,12 +453,12 @@ export default function AdminReports() {
         <section className="admin-hero">
           <div className="admin-hero-grid">
             <div>
-              <div className="eyebrow">Report workspace</div>
+              <div className="eyebrow">Reports</div>
               <h2 className="hero-heading" style={{ marginTop: '0.55rem' }}>
                 Capture patient progress, clinical notes, and next-step guidance in a clear format.
               </h2>
               <p className="hero-copy">
-                The local dummy report store has been removed. This page now reads and writes only real nutritionist reports.
+                Create reports, attach finished files, and keep each member update together in one place.
               </p>
 
               <div className="pill-row">
@@ -401,7 +513,7 @@ export default function AdminReports() {
           ))}
         </section>
 
-        {loading ? <div className="admin-note">Loading report workspace...</div> : null}
+        {loading ? <div className="admin-note">Loading reports...</div> : null}
         {patientError ? <div className="admin-note">{patientError}</div> : null}
 
         <div className="g-2">
@@ -470,7 +582,7 @@ export default function AdminReports() {
             <div>
               <h3 style={{ marginBottom: '0.2rem' }}>Patient reports</h3>
               <p style={{ color: '#8b907f', fontSize: '0.84rem' }}>
-                Expand a report to review notes, outcomes, and recommendations.
+                Open a report to review notes, goals, recommendations, and any uploaded file.
               </p>
             </div>
 
@@ -528,6 +640,26 @@ export default function AdminReports() {
                         <div>
                           <h4>Recommendations</h4>
                           <p>{report.recommendations || 'No recommendations added yet.'}</p>
+                        </div>
+                        <div>
+                          <h4>Report file</h4>
+                          {report.hasAttachment ? (
+                            <div className="pill-row">
+                              <span className="badge badge-green">{report.attachmentFileName || 'Attached file'}</span>
+                              <span className="badge badge-gray">{formatFileSize(report.attachmentSize)}</span>
+                              <button
+                                type="button"
+                                className="btn btn-outline"
+                                onClick={() => handleDownloadAttachment(report)}
+                                disabled={downloadingId === report.id}
+                              >
+                                <Download size={14} />
+                                {downloadingId === report.id ? 'Downloading...' : 'Download file'}
+                              </button>
+                            </div>
+                          ) : (
+                            <p>No file uploaded yet.</p>
+                          )}
                         </div>
                       </div>
                     ) : null}

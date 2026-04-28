@@ -146,7 +146,7 @@ export default function PatientDetailPage() {
               </div>
 
               <div className="admin-note" style={{ marginTop: '1rem' }}>
-                Messages become available once an appointment thread is active.
+                Messages become available once your appointment chat is opened.
               </div>
             </section>
           </div>

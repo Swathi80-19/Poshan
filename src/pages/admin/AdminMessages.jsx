@@ -127,7 +127,7 @@ export default function AdminMessages() {
       } catch (requestError) {
         if (!cancelled) {
           setThread(null)
-          setError(requestError.message || 'Unable to open this member thread right now.')
+          setError(requestError.message || 'Unable to open this member chat right now.')
         }
       } finally {
         if (!cancelled) {
@@ -225,7 +225,7 @@ export default function AdminMessages() {
         </div>
 
         <div className="page-header-right">
-          <span className="badge badge-green">{unlockedChats} unlocked threads</span>
+          <span className="badge badge-green">{unlockedChats} unlocked chats</span>
           <button className="icon-btn">
             <Bell size={18} />
           </button>
@@ -247,22 +247,22 @@ export default function AdminMessages() {
               <div className="eyebrow">Practice inbox</div>
               <h3 style={{ marginTop: 8 }}>Manage member conversations in one dedicated inbox.</h3>
               <p style={{ color: '#6f7867', marginTop: 8, maxWidth: 760 }}>
-                Review appointment discussions, send follow-ups, and keep each member conversation in a single thread.
+                Review appointment discussions, send follow-ups, and keep each member conversation in one place.
               </p>
             </div>
             <div className="pill-row">
-              <span className="badge badge-green">{conversations.length} member threads</span>
+              <span className="badge badge-green">{conversations.length} member chats</span>
               <span className="badge badge-gray">{unlockedChats} unlocked</span>
-              <span className="badge badge-amber">{totalMessages} messages in current thread</span>
+              <span className="badge badge-amber">{totalMessages} messages in this chat</span>
             </div>
           </div>
         </section>
 
         <section className="summary-grid">
           {[
-            { label: 'Live threads', value: conversations.length, foot: 'Booked relationships available for chat', tone: '#e7efe0', accent: '#73955f' },
-            { label: 'Unlocked chats', value: unlockedChats, foot: 'Threads you have manually unlocked', tone: '#e8f0fb', accent: '#4d82b7' },
-            { label: 'Current thread', value: totalMessages, foot: activeConversation?.counterpartName || 'No member selected', tone: '#f8eccc', accent: '#c9953b' },
+            { label: 'Active chats', value: conversations.length, foot: 'Booked members available for chat', tone: '#e7efe0', accent: '#73955f' },
+            { label: 'Unlocked chats', value: unlockedChats, foot: 'Chats you have manually opened', tone: '#e8f0fb', accent: '#4d82b7' },
+            { label: 'Current chat', value: totalMessages, foot: activeConversation?.counterpartName || 'No member selected', tone: '#f8eccc', accent: '#c9953b' },
           ].map((item) => (
             <article key={item.label} className="metric-card">
               <div className="metric-card-top">
@@ -286,7 +286,7 @@ export default function AdminMessages() {
             </div>
 
             <div style={{ marginTop: 14, overflowY: 'auto', flex: 1 }}>
-              {loading ? <div className="admin-note">Loading member threads...</div> : null}
+              {loading ? <div className="admin-note">Loading member chats...</div> : null}
               {error ? <div className="admin-note">{error}</div> : null}
               {!loading && !error && !filtered.length ? (
                 <div className="admin-note">Messages become available after a member books an appointment.</div>
@@ -340,7 +340,7 @@ export default function AdminMessages() {
                 <div className="queue-sub">
                   {thread?.appointmentLabel
                     ? `Booked for ${thread.appointmentLabel}`
-                    : 'Select a booked member thread'}
+                    : 'Select a booked member chat'}
                 </div>
               </div>
               <div style={{ flex: 1 }} />
@@ -358,8 +358,8 @@ export default function AdminMessages() {
             </div>
 
             <div className="messages-thread-body" style={{ flex: 1, overflowY: 'auto', padding: '22px 24px', background: 'rgba(246,240,229,0.45)' }}>
-              {threadLoading ? <div className="admin-note">Loading thread...</div> : null}
-              {!threadLoading && !thread ? <div className="admin-note">No member thread is selected yet.</div> : null}
+              {threadLoading ? <div className="admin-note">Loading chat...</div> : null}
+              {!threadLoading && !thread ? <div className="admin-note">No member chat is selected yet.</div> : null}
 
               {!threadLoading && thread && !thread.messages.length ? (
                 <div
@@ -374,7 +374,7 @@ export default function AdminMessages() {
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                     <Sparkles size={16} color="#73955f" />
-                    <strong style={{ color: '#2d3827' }}>Thread opened</strong>
+                    <strong style={{ color: '#2d3827' }}>Chat opened</strong>
                   </div>
                   <div style={{ color: '#5f6958', lineHeight: 1.6 }}>
                     {thread.chatUnlocked
@@ -429,7 +429,7 @@ export default function AdminMessages() {
             ) : (
               <div style={{ padding: 18, borderTop: '1px solid rgba(92,120,74,0.08)' }}>
                 <div className="auth-note">
-                  <span>This thread stays read-only until you unlock chat manually.</span>
+                  <span>This chat stays read-only until you unlock it manually.</span>
                 </div>
               </div>
             )}

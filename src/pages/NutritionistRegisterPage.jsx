@@ -122,7 +122,7 @@ export default function NutritionistRegisterPage() {
           <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
             <li><span className="feature-dot">&bull;</span><span>Show your specialization and experience in the expert directory.</span></li>
             <li><span className="feature-dot">&bull;</span><span>Receive appointment requests and member messages in your portal.</span></li>
-            <li><span className="feature-dot">&bull;</span><span>Keep your roster, reports, and consultations organized in one workspace.</span></li>
+            <li><span className="feature-dot">&bull;</span><span>Keep your roster, reports, and consultations organized in one place.</span></li>
           </ul>
         </div>
       </section>
@@ -251,7 +251,7 @@ export default function NutritionistRegisterPage() {
 
               <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
                 <span className="feature-dot">&bull;</span>
-                <span>You will need to verify your work email before the clinical workspace unlocks.</span>
+                <span>You will need to verify your work email before your account becomes active.</span>
               </div>
 
               {error ? (

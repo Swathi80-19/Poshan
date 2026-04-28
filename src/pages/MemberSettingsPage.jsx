@@ -84,7 +84,7 @@ export default function MemberSettingsPage() {
             <div className="dashboard-panel-heading">
               <div>
                 <h3>Session access</h3>
-                <p>Manage how {username} enters or leaves the member workspace.</p>
+                <p>Manage how {username} signs in and out of the app.</p>
               </div>
               <Settings size={18} color="#73955f" />
             </div>

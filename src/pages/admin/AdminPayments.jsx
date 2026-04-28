@@ -33,7 +33,7 @@ export default function AdminPayments() {
 
     if (!session.accessToken) {
       setLoading(false)
-      setError('Sign in as a nutritionist to view your billing workspace.')
+      setError('Sign in as a nutritionist to view your payments.')
       return undefined
     }
 
@@ -81,7 +81,7 @@ export default function AdminPayments() {
     <div className="animate-fade">
       <div className="admin-page-header">
         <div>
-          <div className="page-header-greeting">Billing workspace</div>
+          <div className="page-header-greeting">Payments</div>
           <h1>Payments</h1>
         </div>
 
@@ -103,10 +103,10 @@ export default function AdminPayments() {
             <div>
               <div className="eyebrow">Collections overview</div>
               <h2 className="hero-heading" style={{ marginTop: '0.55rem' }}>
-                Review the real payment ledger tied to your member accounts.
+                Review payment activity connected to your members.
               </h2>
               <p className="hero-copy">
-                Placeholder finance copy has been removed. This page now shows only real payment entries or clean empty states.
+                Track payments, recent buyers, and plan activity in one clear view.
               </p>
 
               <div className="pill-row">
@@ -120,7 +120,7 @@ export default function AdminPayments() {
               <div className="dashboard-panel-heading">
                 <div>
                   <h3>Billing status</h3>
-                  <p>Payment totals will appear here when settlement tracking is enabled.</p>
+                  <p>Payment totals and recent activity appear here for quick review.</p>
                 </div>
                 <Wallet size={18} color="#73955f" />
               </div>
@@ -128,17 +128,17 @@ export default function AdminPayments() {
               <div className="mini-metric-grid">
                 <div className="mini-metric">
                   <strong>{displayName}</strong>
-                  <span>practice account</span>
+                  <span>nutritionist account</span>
                 </div>
                 <div className="mini-metric">
                   <strong>{payments.length}</strong>
-                  <span>ledger entries</span>
+                  <span>payment entries</span>
                 </div>
               </div>
 
               <div className="admin-note" style={{ marginTop: '1rem' }}>
                 {payments.length
-                  ? 'These totals come directly from stored payment records instead of placeholder finance metrics.'
+                  ? 'Your latest payment totals are ready to review here.'
                   : 'No payment records are connected to this nutritionist yet.'}
               </div>
             </div>
@@ -161,7 +161,7 @@ export default function AdminPayments() {
           ))}
         </section>
 
-        {loading ? <div className="admin-note">Loading billing workspace...</div> : null}
+        {loading ? <div className="admin-note">Loading payments...</div> : null}
         {error ? <div className="admin-note">{error}</div> : null}
 
         <div className="g-2-auto">

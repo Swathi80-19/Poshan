@@ -114,9 +114,9 @@ export default function AdminLoginPage() {
             </div>
           </div>
 
-          <h1 className="auth-heading">Sign into your clinical workspace.</h1>
+          <h1 className="auth-heading">Sign into your nutritionist dashboard.</h1>
           <p className="auth-copy">
-            Access your dashboard, member messages, patient roster, and appointment schedule from one secure portal.
+            Access your dashboard, member messages, patient list, and appointment schedule from one secure login.
           </p>
 
           <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
@@ -265,7 +265,7 @@ export default function AdminLoginPage() {
 
             <div className="auth-actions" style={{ marginTop: 0 }}>
               <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ flex: 1 }}>
-                {loading ? 'Please wait...' : phoneStep ? 'Verify phone and continue' : 'Access clinical workspace'}
+                {loading ? 'Please wait...' : phoneStep ? 'Verify phone and continue' : 'Open nutritionist dashboard'}
                 {!loading ? <ArrowRight size={16} /> : null}
               </button>
               {phoneStep ? (

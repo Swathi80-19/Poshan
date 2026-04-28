@@ -58,7 +58,7 @@ export default function AdminProfileIntakePage() {
             <div className="dashboard-panel-heading">
               <div>
                 <h3>Personal details</h3>
-                <p>Add your age once so the profile stays complete across your nutritionist workspace.</p>
+                <p>Add your age once so your profile stays complete across the app.</p>
               </div>
               <span className="badge badge-green">Required</span>
             </div>

@@ -111,13 +111,13 @@ export default function UserLoginPage() {
             </div>
             <div>
               <div className="brand-name" style={{ fontSize: '1.9rem' }}>Poshan</div>
-              <div className="eyebrow" style={{ marginTop: '0.2rem' }}>Member workspace</div>
+              <div className="eyebrow" style={{ marginTop: '0.2rem' }}>Member login</div>
             </div>
           </div>
 
           <h1 className="auth-heading">Return to a calmer daily care routine.</h1>
           <p className="auth-copy">
-            Review your progress, track meals and recovery, and continue your nutrition plan from the same personal workspace.
+            Review your progress, track meals and recovery, and continue your nutrition plan from the same personal space.
           </p>
 
           <ul className="feature-list" style={{ marginTop: '1.25rem' }}>
@@ -276,7 +276,7 @@ export default function UserLoginPage() {
 
             <div className="auth-actions" style={{ marginTop: 0 }}>
               <button type="submit" className="btn btn-primary btn-lg" disabled={loading} style={{ flex: 1 }}>
-                {loading ? 'Please wait...' : phoneStep ? 'Verify phone and continue' : 'Enter member workspace'}
+                {loading ? 'Please wait...' : phoneStep ? 'Verify phone and continue' : 'Enter member dashboard'}
                 {!loading ? <ArrowRight size={16} /> : null}
               </button>
               {phoneStep ? (

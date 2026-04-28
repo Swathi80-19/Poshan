@@ -15,7 +15,7 @@ const choices = [
     title: 'Member login',
     icon: <UserRound size={20} />,
     action: '/login',
-    description: 'Track meals, appointments, and progress in your personal wellness workspace.',
+    description: 'Track meals, appointments, and progress in your personal wellness space.',
     eyebrow: 'For patients',
     points: ['Meals and activity', 'Appointments and history'],
   },
@@ -88,7 +88,7 @@ export default function ChoicePage() {
             <div className="story-section-tag">Choose your entrance</div>
             <h1 className="choice-stage-title">Select the login that matches the person using Poshan.</h1>
             <p className="choice-stage-text">
-              Pick the workspace you want to open now. Each path takes you straight into the tools made for that role.
+              Pick the login you want to open now. Each path takes you straight into the tools made for that role.
             </p>
             <p className="choice-stage-note">
               Two clear paths, one secure account system. You can always switch later by signing out.
@@ -129,7 +129,7 @@ export default function ChoicePage() {
           <div className="choice-stage-support">
             <span className="choice-stage-support-label">Quick reminder</span>
             <p className="choice-stage-support-text">
-              Members continue to their personal wellness dashboard. Nutritionists continue to the clinical workspace.
+              Members continue to their personal wellness dashboard. Nutritionists continue to their practice dashboard.
             </p>
           </div>
         </section>

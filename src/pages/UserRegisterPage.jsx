@@ -211,7 +211,7 @@ export default function UserRegisterPage() {
 
               <div className="auth-note" style={{ marginBottom: '1.2rem' }}>
                 <span className="feature-dot">&#10003;</span>
-                <span>You will need to verify your email before the member workspace unlocks.</span>
+                <span>You will need to verify your email before your account becomes active.</span>
               </div>
 
               {error ? (
